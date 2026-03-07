@@ -1,8 +1,10 @@
 .env
 .log
+.air.toml
 
 /bin
 /tmp
+/minio_data/
 
-.idea/
-.DS_Store/
+/.idea/
+/.DS_Store/

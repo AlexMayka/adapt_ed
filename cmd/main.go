@@ -1,7 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"backend/internal/config"
+	"fmt"
+)
 
 func main() {
-	fmt.Print("Hello")
+	cnf, err := config.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%+v", cnf)
 }

@@ -1,5 +1,6 @@
 run:
 	echo "Запуск программы"
+	@set -a; . ./.env; set +a; \
 	go run ./cmd/main.go
 
 build:
@@ -31,3 +32,4 @@ migrate-up:
 	echo "Запуск миграций"
 	@set -a; . ./.env; set +a; \
 	goose -dir migrations postgres "host=$${SR_PG_HOST} port=$${SR_PG_PORT} user=$${SR_PG_USER} password=$${SR_PG_PASSWORD} dbname=$${SR_PG_DB} sslmode=disable" up
+
