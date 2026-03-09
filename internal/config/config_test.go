@@ -47,6 +47,7 @@ var wantConfig = Config{
 	},
 }
 
+// TestLoad checks env parsing and validation outcomes for positive and negative scenarios.
 func TestLoad(t *testing.T) {
 	tests := []struct {
 		name   string

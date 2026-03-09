@@ -25,6 +25,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// validateApp validates application-specific settings.
 func validateApp(app *AppConfig) error {
 	if app == nil {
 		return errors.New("app config is nil")
@@ -43,6 +44,7 @@ func validateApp(app *AppConfig) error {
 	return nil
 }
 
+// validateDB validates PostgreSQL connection and pool settings.
 func validateDB(db *DBConfig) error {
 	if db == nil {
 		return errors.New("db config is nil")
@@ -78,6 +80,7 @@ func validateDB(db *DBConfig) error {
 	return nil
 }
 
+// validateMinio validates object storage connection settings.
 func validateMinio(minio *MinioConfig) error {
 	if minio == nil {
 		return errors.New("minio config is nil")

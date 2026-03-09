@@ -2,6 +2,7 @@ package config
 
 import "testing"
 
+// TestValidate verifies semantic validation rules for different config shapes.
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -121,6 +122,7 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+// validConfig returns a known-good config used as a base fixture in tests.
 func validConfig() *Config {
 	return &Config{
 		App: &AppConfig{

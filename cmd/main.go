@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// main loads runtime configuration and prints it for local sanity-check runs.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {

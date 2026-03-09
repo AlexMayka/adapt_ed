@@ -59,28 +59,28 @@ func GetEnv[T SupportedEnvType](key string) (T, error) {
 		if err != nil {
 			return zero, fmt.Errorf("%w: type: int8, key: %v, err: %v", ErrParseError, key, err)
 		}
-		return any(v).(T), nil
+		return any(int8(v)).(T), nil
 
 	case int16:
 		v, err := strconv.ParseInt(raw, 10, 16)
 		if err != nil {
 			return zero, fmt.Errorf("%w: type: int16, key: %v, err: %v", ErrParseError, key, err)
 		}
-		return any(v).(T), nil
+		return any(int16(v)).(T), nil
 
 	case int32:
 		v, err := strconv.ParseInt(raw, 10, 32)
 		if err != nil {
 			return zero, fmt.Errorf("%w: type: int32, key: %v, err: %v", ErrParseError, key, err)
 		}
-		return any(v).(T), nil
+		return any(int32(v)).(T), nil
 
 	case float32:
 		v, err := strconv.ParseFloat(raw, 32)
 		if err != nil {
 			return zero, fmt.Errorf("%w: type: float32, key: %v, err: %v", ErrParseError, key, err)
 		}
-		return any(v).(T), nil
+		return any(float32(v)).(T), nil
 
 	case float64:
 		v, err := strconv.ParseFloat(raw, 64)

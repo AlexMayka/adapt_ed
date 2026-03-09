@@ -56,6 +56,7 @@ func appendErr(errs []error, key string, err error) []error {
 	return errs
 }
 
+// loadEnv parses env vars into Config fields and applies default values.
 func loadEnv() (*Config, error) {
 	var errs []error
 	var err error

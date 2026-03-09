@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TestValidatePort checks accepted and rejected port bounds.
 func TestValidatePort(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -31,6 +32,7 @@ func TestValidatePort(t *testing.T) {
 	}
 }
 
+// TestValidateEmptinessParam checks blank/non-blank string validation.
 func TestValidateEmptinessParam(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -55,6 +57,7 @@ func TestValidateEmptinessParam(t *testing.T) {
 	}
 }
 
+// TestValidateParamMore checks strictly-greater-than numeric validation.
 func TestValidateParamMore(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		if err := ValidateParamMore("MAX", 10, 0); err != nil {
@@ -77,6 +80,7 @@ func TestValidateParamMore(t *testing.T) {
 	})
 }
 
+// TestValidateLogLevel checks allowed and rejected log level values.
 func TestValidateLogLevel(t *testing.T) {
 	validLevels := []string{"debug", "info", "warn", "error", " INFO "}
 	for _, level := range validLevels {
