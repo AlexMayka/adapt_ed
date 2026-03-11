@@ -1,0 +1,514 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Project PG_AdaptEd {
+  database_type: 'PostgreSQL'
+  Note: 'Описание БД PostgreSQL для MVP AdaptEd — адаптивной образовательной платформы'
+}
+
+// ===== ENUM =====
+
+Enum user_role {
+  student
+  teacher
+  school_admin
+}
+
+Enum difficulty_level {
+  simple
+  medium
+  advanced
+}
+
+Enum topic_status {
+  not_started
+  in_progress
+  understood
+  needs_review
+}
+
+Enum question_type {
+  single_choice
+  multiple_choice
+  exact_answer
+}
+
+Enum assessment_type {
+  mini_check
+  homework
+  checkpoint
+  final_exam
+}
+
+Enum assessment_status {
+  draft
+  assigned
+  completed
+}
+
+Enum attempt_status {
+  in_progress
+  completed
+  abandoned
+}
+
+Enum event_kind {
+  explanation_viewed
+  mini_check_started
+  mini_check_passed
+  mini_check_failed
+  llm_re_explanation_viewed
+  level_changed
+  status_changed
+}
+
+// ===== Домен 1: Школы и пользователи =====
+
+Table schools {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор учебного заведения"]
+  name text [not null, note: "Название школы"]
+  city text [not null, note: "Город школы"]
+  logo_key text [default: null, note: "Путь к логотипу в MinIO"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+  deleted_at timestamptz [note: "Дата удаления записи, soft delete"]
+
+  Note: 'Учебное заведение. Верхний уровень организационной структуры. Ученик может быть без школы (индивидуальный).'
+}
+
+Table classes {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор класса"]
+  school_id uuid [not null, note: "Школа класса"]
+  number_of_class smallint [not null, note: "Порядковый номер класса (5, 6, 7, 8...)"]
+  suffixes_of_class text [not null, note: "Суффикс класса (А, Б, В...)"]
+  academic_year_start date [not null, default: '''
+        CASE
+            WHEN CURRENT_DATE >= make_date(extract(year from CURRENT_DATE)::int, 9, 1)
+                THEN make_date(extract(year from CURRENT_DATE)::int, 9, 1)
+            ELSE
+                make_date(extract(year from CURRENT_DATE)::int - 1, 9, 1)
+        END
+    ''', note: "Дата начала учебного года"]
+  academic_year_finish date [not null, default: '''
+    CASE
+      WHEN CURRENT_DATE > make_date(extract(year from CURRENT_DATE)::int - 1, 8, 31)
+          THEN make_date(extract(year from CURRENT_DATE)::int, 8, 31)
+      ELSE
+          make_date(extract(year from CURRENT_DATE)::int, 8, 31)
+    END
+  ''', note: "Дата окончания учебного года"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+  deleted_at timestamptz [note: "Дата удаления записи, soft delete"]
+
+  indexes {
+    (school_id, number_of_class, suffixes_of_class) [unique, note: "Уникальность по школе-классу-суффиксу"]
+  }
+
+  Note: 'Класс внутри школы (7А, 7Б). Содержит точные даты учебного года для аналитики и автоматической смены класса.'
+}
+
+Ref: classes.school_id > schools.id [delete: cascade, update: no action]
+
+Table users {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор пользователя"]
+  role user_role [not null, default: 'student', note: "Роль пользователя"]
+  class_id uuid [default: null, note: "Класс пользователя"]
+  school_id uuid [default: null, note: "Школа пользователя"]
+  email text [not null, note: "Email пользователя"]
+  password_hash text [not null, note: "Хэш пароля пользователя"]
+  last_name text [not null, note: "Фамилия пользователя"]
+  first_name text [not null, note: "Имя пользователя"]
+  middle_name text [default: null, note: "Отчество пользователя"]
+  avatar_key text [default: null, note: "Путь к аватарке в MinIO"]
+  is_active bool [not null, default: true, note: "Активен ли пользователь"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+  deleted_at timestamptz [note: "Дата удаления записи, soft delete"]
+
+  indexes {
+    email [unique, name: "uq_users_email", note: "Уникальный email"]
+    (last_name, first_name, middle_name, school_id) [name: "idx_users_fullname", note: "Составной индекс для поиска пользователя школы"]
+  }
+
+  Note: 'Все пользователи платформы. Роль определяет возможности. school_id и class_id nullable — индивидуальные ученики без школы.'
+}
+
+Ref: users.class_id > classes.id [delete: cascade, update: no action]
+Ref: users.school_id > schools.id [delete: cascade, update: no action]
+
+Table interests {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор интереса"]
+  name text [not null, unique, note: "Название интереса (футбол, Minecraft, робототехника...)"]
+  icon_key text [default: null, note: "Путь к иконке интереса в MinIO"]
+  is_verified bool [not null, default: false, note: "Прошёл проверку (LLM-модерация / ручная)"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+
+  Note: 'Справочник интересов учеников. Используются LLM для генерации аналогий. Новые интересы проходят модерацию (is_verified).'
+}
+
+Table student_profiles {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор профиля"]
+  user_id uuid [not null, note: "Пользователь профиля"]
+  default_level difficulty_level [not null, default: 'simple', note: "Уровень пользователя (может редактироваться системой)"]
+  interests "uuid[]" [not null, default: '{}', note: "Массив ID интересов из таблицы interests"]
+  is_active bool [not null, default: true, note: "Активна ли запись (текущая версия)"]
+  version serial [not null, note: "Номер версии профиля"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания версии"]
+
+  indexes {
+    (user_id, is_active) [name: "idx_student_profiles_user_id_is_active"]
+  }
+
+  Note: 'Профиль ученика с версионированием. Хранит уровень сложности и интересы для LLM. Новая версия создаётся при изменении уровня или интересов — для отслеживания эффективности промптов.'
+}
+
+Ref: student_profiles.user_id > users.id [delete: cascade, update: no action]
+
+Table teacher_classes {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор связи учитель-класс"]
+  teacher_id uuid [not null, note: "Идентификатор учителя"]
+  class_id uuid [not null, note: "Идентификатор класса"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+
+  indexes {
+    (teacher_id, class_id) [unique, name: "uq_teacher_classes", note: "Уникальная связь учитель-класс"]
+    class_id [name: "idx_teacher_classes_class_id"]
+  }
+
+  Note: 'Связь M:N между учителями и классами. Учитель может вести несколько классов, класс может иметь нескольких учителей.'
+}
+
+Ref: teacher_classes.teacher_id > users.id [delete: cascade, update: no action]
+Ref: teacher_classes.class_id > classes.id [delete: cascade, update: no action]
+
+Table refresh_tokens {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор токена"]
+  user_id uuid [not null, note: "Пользователь"]
+  token_hash text [not null, note: "Хэш refresh токена"]
+  device_info text [default: null, note: "Информация об устройстве (User-Agent, IP)"]
+  expires_at timestamptz [not null, note: "Срок действия токена"]
+  revoked_at timestamptz [default: null, note: "Дата отзыва (NULL = активен)"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания"]
+
+  indexes {
+    token_hash [unique, name: "uq_refresh_tokens_hash", note: "Быстрый поиск по хэшу"]
+    user_id [name: "idx_refresh_tokens_user_id"]
+    (user_id, revoked_at) [name: "idx_refresh_tokens_user_active", note: "Активные токены пользователя"]
+    expires_at [name: "idx_refresh_tokens_expires", note: "Для очистки просроченных"]
+  }
+
+  Note: 'JWT refresh токены. Хранится хэш, не сам токен. device_info для отображения активных сессий. Отзыв через revoked_at без удаления.'
+}
+
+Ref: refresh_tokens.user_id > users.id [delete: cascade, update: no action]
+
+// ===== Домен 2: Учебная программа =====
+
+Table subjects {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор предмета"]
+  name text [not null, note: "Название предмета (Информатика)"]
+  slug text [not null, unique, note: "Slug предмета (informatics)"]
+  icon_key text [default: null, note: "Путь к иконке предмета в MinIO"]
+  color text [default: null, note: "Цвет предмета в UI (#HEX)"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+
+  Note: 'Учебный предмет (Информатика, Физика, Математика). Стабильный справочник без версионирования.'
+}
+
+Table grades {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор класса-предмета"]
+  subject_id uuid [not null, note: "Предмет"]
+  grade_number smallint [not null, note: "Номер класса (7)"]
+  textbook text [default: null, note: "Учебник (Босова Л.Л., ФГОС)"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+
+  indexes {
+    (subject_id, grade_number) [unique, note: "Один предмет — один класс"]
+  }
+
+  Note: 'Связка предмет + номер класса. Содержит ссылку на учебник. Стабильный справочник без версионирования.'
+}
+
+Ref: grades.subject_id > subjects.id [delete: cascade, update: no action]
+
+Table chapters {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор версии главы"]
+  grade_id uuid [not null, note: "Класс-предмет"]
+  title text [not null, note: "Название главы"]
+  sort_order smallint [not null, note: "Порядок главы (1, 2, 3...)"]
+  icon_key text [default: null, note: "Путь к иконке главы в MinIO"]
+  is_active bool [not null, default: true, note: "Текущая версия"]
+  version serial [not null, note: "Номер версии"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания версии"]
+
+  indexes {
+    (grade_id, sort_order) [note: "Порядок глав в классе (partial: WHERE is_active = true)"]
+  }
+
+  Note: 'Глава учебной программы. Версионируется — при изменении создаётся новая версия.'
+}
+
+Ref: chapters.grade_id > grades.id [delete: cascade, update: no action]
+
+Table topics {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор версии параграфа"]
+  chapter_id uuid [not null, note: "Глава"]
+  title text [not null, note: "Название параграфа"]
+  sort_order smallint [not null, note: "Порядок параграфа внутри главы"]
+  icon_key text [default: null, note: "Путь к иконке параграфа в MinIO"]
+  is_active bool [not null, default: true, note: "Текущая версия"]
+  version serial [not null, note: "Номер версии"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания версии"]
+
+  indexes {
+    (chapter_id, sort_order) [note: "Порядок параграфов (partial: WHERE is_active = true)"]
+  }
+
+  Note: 'Параграф внутри главы. Группирует подтемы. Версионируется.'
+}
+
+Ref: topics.chapter_id > chapters.id [delete: cascade, update: no action]
+
+Table subtopics {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор версии подтемы"]
+  topic_id uuid [not null, note: "Родительский параграф"]
+  title text [not null, note: "Название подтемы"]
+  sort_order smallint [not null, note: "Порядок подтемы внутри параграфа"]
+  icon_key text [default: null, note: "Путь к иконке подтемы в MinIO"]
+  is_active bool [not null, default: true, note: "Текущая версия"]
+  version serial [not null, note: "Номер версии"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания версии"]
+
+  indexes {
+    (topic_id, sort_order) [note: "Порядок подтем (partial: WHERE is_active = true)"]
+    topic_id [name: "idx_subtopics_topic_id"]
+  }
+
+  Note: 'Подтема — атомарная единица обучения. К ней привязаны объяснения, вопросы и прогресс ученика. Версионируется.'
+}
+
+Ref: subtopics.topic_id > topics.id [delete: cascade, update: no action]
+
+// ===== Домен 3: Объяснения =====
+
+Table base_explanations {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор версии объяснения"]
+  subtopic_id uuid [not null, note: "Подтема"]
+  level difficulty_level [not null, note: "Уровень сложности"]
+  title text [not null, note: "Заголовок объяснения"]
+  storage_key text [not null, note: "Путь к JSON-файлу с блоками контента в MinIO"]
+  is_active bool [not null, default: true, note: "Текущая версия"]
+  version serial [not null, note: "Номер версии"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания версии"]
+
+  indexes {
+    (subtopic_id, level, is_active) [note: "Поиск активного объяснения по подтеме и уровню"]
+  }
+
+  Note: 'Базовое экспертное объяснение подтемы на определённом уровне сложности. Контент хранится в MinIO как JSON с блоками (text, code, diagram, table). Версионируется.'
+}
+
+Ref: base_explanations.subtopic_id > subtopics.id [delete: cascade, update: no action]
+
+Table llm_re_explanations {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор переобъяснения"]
+  student_profile_id uuid [not null, note: "Версия профиля ученика на момент генерации"]
+  subtopic_id uuid [not null, note: "Подтема"]
+  attempt_number smallint [not null, note: "Номер попытки переобъяснения (1, 2, 3...)"]
+  prompt_used text [not null, note: "Промпт, отправленный в LLM"]
+  storage_key text [not null, note: "Путь к JSON-файлу с блоками контента в MinIO"]
+  model_id text [default: null, note: "Модель LLM (gpt-4o, claude-sonnet...)"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата генерации"]
+
+  indexes {
+    (student_profile_id, subtopic_id) [name: "idx_llm_re_expl_profile_subtopic"]
+    (student_profile_id, subtopic_id, attempt_number) [unique, name: "uq_llm_re_expl_attempt"]
+  }
+
+  Note: 'LLM-переобъяснение, адаптированное под интересы ученика. Привязано к конкретной версии профиля для отслеживания эффективности. Контент в MinIO.'
+}
+
+Ref: llm_re_explanations.student_profile_id > student_profiles.id [delete: cascade, update: no action]
+Ref: llm_re_explanations.subtopic_id > subtopics.id [delete: cascade, update: no action]
+
+// ===== Домен 4: Проверки и вопросы =====
+
+Table questions {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор версии вопроса"]
+  subtopic_id uuid [not null, note: "Подтема"]
+  type question_type [not null, note: "Тип вопроса"]
+  difficulty difficulty_level [not null, default: 'medium', note: "Сложность вопроса"]
+  text text [not null, note: "Текст вопроса (markdown)"]
+  exact_answer text [default: null, note: "Ожидаемый ответ (для exact_answer)"]
+  explanation text [default: null, note: "Пояснение после ответа"]
+  is_active bool [not null, default: true, note: "Текущая версия"]
+  version serial [not null, note: "Номер версии"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания версии"]
+
+  indexes {
+    (subtopic_id, difficulty, is_active) [name: "idx_questions_subtopic_diff_active", note: "Подбор активных вопросов по подтеме и сложности"]
+  }
+
+  Note: 'Банк вопросов. Привязан к подтеме. Версионируется — старые версии сохраняются для истории ответов учеников.'
+}
+
+Ref: questions.subtopic_id > subtopics.id [delete: cascade, update: no action]
+
+Table question_options {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор варианта ответа"]
+  question_id uuid [not null, note: "Вопрос (конкретная версия)"]
+  text text [not null, note: "Текст варианта"]
+  is_correct bool [not null, default: false, note: "Правильный ли вариант"]
+  sort_order smallint [not null, default: 0, note: "Порядок отображения"]
+
+  indexes {
+    question_id [name: "idx_question_options_question_id"]
+  }
+
+  Note: 'Варианты ответов для single_choice и multiple_choice вопросов. Привязаны к конкретной версии вопроса.'
+}
+
+Ref: question_options.question_id > questions.id [delete: cascade, update: no action]
+
+Table assessments {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор проверки"]
+  type assessment_type [not null, note: "Тип проверки"]
+  status assessment_status [not null, default: 'draft', note: "Статус проверки"]
+  title text [not null, note: "Название проверки"]
+  topic_id uuid [default: null, note: "Параграф (для mini_check, ДЗ по параграфу)"]
+  chapter_id uuid [default: null, note: "Глава (для КТ, ДЗ по главе)"]
+  grade_id uuid [default: null, note: "Класс-предмет (для итогового экзамена)"]
+  class_id uuid [default: null, note: "Класс (кому назначено)"]
+  assigned_by uuid [default: null, note: "Учитель (NULL = автогенерация)"]
+  due_at timestamptz [default: null, note: "Дедлайн (для ДЗ)"]
+  time_limit_sec int [default: null, note: "Ограничение по времени в секундах"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+
+  indexes {
+    type [name: "idx_assessments_type"]
+    class_id [name: "idx_assessments_class_id"]
+    topic_id [name: "idx_assessments_topic_id"]
+    chapter_id [name: "idx_assessments_chapter_id"]
+  }
+
+  Note: 'Проверка знаний: мини-проверка (после подтемы), ДЗ (по параграфу/главе), КТ (после главы, адаптивный), итоговый экзамен (весь курс, адаптивный). Может быть назначена учителем или сгенерирована автоматически.'
+}
+
+Ref: assessments.topic_id > topics.id [delete: set null, update: no action]
+Ref: assessments.chapter_id > chapters.id [delete: set null, update: no action]
+Ref: assessments.grade_id > grades.id [delete: set null, update: no action]
+Ref: assessments.class_id > classes.id [delete: set null, update: no action]
+Ref: assessments.assigned_by > users.id [delete: set null, update: no action]
+
+Table assessment_questions {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор связи"]
+  assessment_id uuid [not null, note: "Проверка"]
+  question_id uuid [not null, note: "Вопрос (конкретная версия)"]
+  sort_order smallint [not null, default: 0, note: "Порядок вопроса в проверке"]
+
+  indexes {
+    (assessment_id, question_id) [unique, name: "uq_assessment_questions"]
+    assessment_id [name: "idx_assessment_questions_assessment"]
+  }
+
+  Note: 'Связь M:N между проверкой и вопросами. Определяет состав и порядок вопросов в конкретной проверке.'
+}
+
+Ref: assessment_questions.assessment_id > assessments.id [delete: cascade, update: no action]
+Ref: assessment_questions.question_id > questions.id [delete: cascade, update: no action]
+
+Table student_assessment_attempts {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор попытки"]
+  student_id uuid [not null, note: "Ученик"]
+  assessment_id uuid [not null, note: "Проверка"]
+  status attempt_status [not null, default: 'in_progress', note: "Статус попытки"]
+  score "numeric(5,2)" [default: null, note: "Процент 0.00-100.00 (NULL пока in_progress)"]
+  total_questions smallint [not null, default: 0, note: "Всего вопросов"]
+  correct_answers smallint [not null, default: 0, note: "Правильных ответов"]
+  started_at timestamptz [not null, default: `now()`, note: "Время начала"]
+  completed_at timestamptz [default: null, note: "Время завершения"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+
+  indexes {
+    (student_id, assessment_id) [name: "idx_attempts_student_assessment"]
+    student_id [name: "idx_attempts_student_id"]
+    assessment_id [name: "idx_attempts_assessment_id"]
+  }
+
+  Note: 'Попытка ученика пройти проверку. Трекает результат, время начала и завершения. Ученик может иметь несколько попыток на одну проверку.'
+}
+
+Ref: student_assessment_attempts.student_id > users.id [delete: cascade, update: no action]
+Ref: student_assessment_attempts.assessment_id > assessments.id [delete: cascade, update: no action]
+
+Table student_answers {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор ответа"]
+  attempt_id uuid [not null, note: "Попытка"]
+  question_id uuid [not null, note: "Вопрос (конкретная версия)"]
+  selected_option_ids "uuid[]" [default: '{}', note: "Выбранные варианты (для choice вопросов)"]
+  text_answer text [default: null, note: "Текстовый ответ (для exact_answer)"]
+  is_correct bool [not null, note: "Правильный ли ответ"]
+  answered_at timestamptz [not null, default: `now()`, note: "Время ответа"]
+
+  indexes {
+    (attempt_id, question_id) [unique, name: "uq_student_answers_attempt_question"]
+    attempt_id [name: "idx_student_answers_attempt_id"]
+    (question_id, is_correct) [name: "idx_student_answers_question_correct", note: "Для аналитики ошибок по вопросу"]
+  }
+
+  Note: 'Ответ ученика на конкретный вопрос в рамках попытки. Для choice — массив UUID выбранных вариантов, для exact_answer — текст.'
+}
+
+Ref: student_answers.attempt_id > student_assessment_attempts.id [delete: cascade, update: no action]
+Ref: student_answers.question_id > questions.id [delete: cascade, update: no action]
+
+// ===== Домен 5: Прогресс и аналитика =====
+
+Table student_topic_progress {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор прогресса"]
+  student_id uuid [not null, note: "Ученик"]
+  subtopic_id uuid [not null, note: "Подтема"]
+  status topic_status [not null, default: 'not_started', note: "Статус изучения"]
+  current_level difficulty_level [not null, default: 'simple', note: "Текущий уровень объяснения"]
+  explanation_attempts smallint [not null, default: 0, note: "Сколько раз смотрел объяснение"]
+  mini_check_attempts smallint [not null, default: 0, note: "Сколько мини-проверок прошёл"]
+  last_attempt_at timestamptz [default: null, note: "Дата последней активности"]
+  understood_at timestamptz [default: null, note: "Когда подтема была понята"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата создания записи"]
+  updated_at timestamptz [not null, default: `now()`, note: "Дата обновления записи"]
+
+  indexes {
+    (student_id, subtopic_id) [unique, name: "uq_student_topic_progress"]
+    student_id [name: "idx_stp_student_id"]
+    (student_id, status) [name: "idx_stp_student_status", note: "Для поиска слабых подтем"]
+  }
+
+  Note: 'Прогресс ученика по подтеме. Мутабельное состояние — обновляется при каждом взаимодействии. Ядро адаптивного цикла: статус, уровень, счётчики попыток.'
+}
+
+Ref: student_topic_progress.student_id > users.id [delete: cascade, update: no action]
+Ref: student_topic_progress.subtopic_id > subtopics.id [delete: cascade, update: no action]
+
+Table student_topic_events {
+  id uuid [primary key, default: `gen_random_uuid()`, note: "Идентификатор события"]
+  student_id uuid [not null, note: "Ученик"]
+  subtopic_id uuid [not null, note: "Подтема"]
+  kind event_kind [not null, note: "Тип события"]
+  payload jsonb [not null, default: '{}', note: "Данные события (JSON)"]
+  created_at timestamptz [not null, default: `now()`, note: "Дата события"]
+
+  indexes {
+    (student_id, subtopic_id) [name: "idx_ste_student_subtopic"]
+    kind [name: "idx_ste_kind"]
+    created_at [name: "idx_ste_created_at", note: "Для аналитики по времени"]
+  }
+
+  Note: 'Append-only лог событий ученика по подтемам. Не удаляется и не обновляется. Питает аналитику, историю ошибок и карту знаний. Payload — гибкий JSON под каждый тип события.'
+}
+
+Ref: student_topic_events.student_id > users.id [delete: cascade, update: no action]
+Ref: student_topic_events.subtopic_id > subtopics.id [delete: cascade, update: no action]
