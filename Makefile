@@ -1,8 +1,8 @@
 INFRA_DIR=infra
-INFRA_COMPOSE=docker compose --env-file $(INFRA_DIR)/.env -f $(INFRA_DIR)/docker-compose.yml
+ENV_FILE=$(INFRA_DIR)/.env
+INFRA_COMPOSE=docker compose --env-file $(ENV_FILE) -f $(INFRA_DIR)/docker-compose.yml
 LOAD_ENV=@set -a; \
-	[ -f $(INFRA_DIR)/.env ] && . ./$(INFRA_DIR)/.env || true; \
-	[ -f ./.env ] && . ./.env || true; \
+	[ -f $(ENV_FILE) ] && . ./$(ENV_FILE) || true; \
 	set +a;
 
 run:
@@ -41,7 +41,7 @@ migrate-up:
 	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=disable" up
 
 
-APP_COMPOSE=docker compose --env-file $(INFRA_DIR)/.env --env-file .env
+APP_COMPOSE=docker compose --env-file $(ENV_FILE)
 
 app-up: infra-up
 	$(APP_COMPOSE) up -d --build
@@ -55,10 +55,10 @@ app-rebuild: infra-up
 app-logs:
 	$(APP_COMPOSE) logs -f --tail=200
 
-infra-copy-env:
-	cp -n $(INFRA_DIR)/.env.example $(INFRA_DIR)/.env || true
+copy-env:
+	cp -n $(INFRA_DIR)/.env.example $(ENV_FILE) || true
 
-infra-up: infra-copy-env
+infra-up: copy-env
 	$(INFRA_COMPOSE) up -d
 
 infra-down:
