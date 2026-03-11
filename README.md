@@ -34,9 +34,8 @@
 ## Quick start
 
 ```bash
-# 1. Скопировать env-файлы
+# 1. Скопировать env-файл
 cp infra/.env.example infra/.env
-cp .env.example .env
 
 # 2. Поднять инфраструктуру + приложение
 make app-up
@@ -74,9 +73,7 @@ make app-up
 
 ## Env
 
-Env загружается в два слоя:
-1. `infra/.env` — PostgreSQL, Redis, observability (`PG_*`, `REDIS_*`, ...)
-2. `.env` — настройки приложения и MinIO (`SR_AP_*`, `SR_MN_*`)
+Единый env-файл `infra/.env` — все переменные: PostgreSQL (`PG_*`), Redis (`REDIS_*`), MinIO (`MINIO_*`), приложение (`APP_*`), observability.
 
 ## Endpoints
 
@@ -85,9 +82,11 @@ Env загружается в два слоя:
 | App | `localhost:8000` |
 | PostgreSQL | `localhost:5433` |
 | Redis | `localhost:6380` |
+| MinIO API | `localhost:9000` |
+| MinIO Console | `http://localhost:9001` |
 | Prometheus | `http://localhost:9091` |
 | Grafana | `http://localhost:3001` |
 | Loki | `http://localhost:3101` |
 | Node Exporter | `http://localhost:9101/metrics` |
 
-Grafana credentials — в `infra/.env`.
+Grafana и MinIO credentials — в `infra/.env`.
