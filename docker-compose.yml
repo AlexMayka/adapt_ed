@@ -5,12 +5,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./infra/.env
-      - .env
     ports:
-      - "${SR_AP_PORT:-8000}:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - "${APP_PORT:-8000}:8000"
     networks:
       - adapt_ed_net
 
