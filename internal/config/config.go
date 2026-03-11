@@ -78,35 +78,35 @@ func loadEnv() (*Config, error) {
 	errs = appendErr(errs, "SR_AP_LOG_LEVEL", err)
 
 	// настройки БД
-	dbUser, err := utils.GetEnvDefault[string]("SR_PG_USER", "postgres_root")
-	errs = appendErr(errs, "SR_PG_USER", err)
+	dbUser, err := utils.GetEnvDefault[string]("PG_USER", "postgres_root")
+	errs = appendErr(errs, "PG_USER", err)
 
-	dbPassword, err := utils.GetEnv[string]("SR_PG_PASSWORD")
-	errs = appendErr(errs, "SR_PG_PASSWORD", err)
+	dbPassword, err := utils.GetEnv[string]("PG_PASSWORD")
+	errs = appendErr(errs, "PG_PASSWORD", err)
 
-	dbHost, err := utils.GetEnvDefault[string]("SR_PG_HOST", "localhost")
-	errs = appendErr(errs, "SR_PG_HOST", err)
+	dbHost, err := utils.GetEnvDefault[string]("PG_HOST", "localhost")
+	errs = appendErr(errs, "PG_HOST", err)
 
-	dbPort, err := utils.GetEnvDefault[int]("SR_PG_PORT", 5433)
-	errs = appendErr(errs, "SR_PG_PORT", err)
+	dbPort, err := utils.GetEnvDefault[int]("PG_PORT", 5433)
+	errs = appendErr(errs, "PG_PORT", err)
 
-	dbName, err := utils.GetEnvDefault[string]("SR_PG_DB", "SALES_RADAR")
-	errs = appendErr(errs, "SR_PG_DB", err)
+	dbName, err := utils.GetEnvDefault[string]("PG_DB", "SALES_RADAR")
+	errs = appendErr(errs, "PG_DB", err)
 
-	dbMaxConns, err := utils.GetEnvDefault[int]("SR_PG_MAX_CONNS", 20)
-	errs = appendErr(errs, "SR_PG_MAX_CONNS", err)
+	dbMaxConns, err := utils.GetEnvDefault[int]("PG_MAX_CONNS", 20)
+	errs = appendErr(errs, "PG_MAX_CONNS", err)
 
-	dbMinConns, err := utils.GetEnvDefault[int]("SR_PG_MIN_CONNS", 20)
-	errs = appendErr(errs, "SR_PG_MIN_CONNS", err)
+	dbMinConns, err := utils.GetEnvDefault[int]("PG_MIN_CONNS", 20)
+	errs = appendErr(errs, "PG_MIN_CONNS", err)
 
-	dbConnLifetime, err := utils.GetDurationEnvDefault("SR_PG_CONN_LIFETIME", time.Second*60)
-	errs = appendErr(errs, "SR_PG_CONN_LIFETIME", err)
+	dbConnLifetime, err := utils.GetDurationEnvDefault("PG_CONN_LIFETIME", time.Second*60)
+	errs = appendErr(errs, "PG_CONN_LIFETIME", err)
 
-	dbConnIdleTime, err := utils.GetDurationEnvDefault("SR_PG_CONN_IDLE_TIME", time.Second*60)
-	errs = appendErr(errs, "SR_PG_CONN_IDLE_TIME", err)
+	dbConnIdleTime, err := utils.GetDurationEnvDefault("PG_CONN_IDLE_TIME", time.Second*60)
+	errs = appendErr(errs, "PG_CONN_IDLE_TIME", err)
 
-	dbQueryTimeout, err := utils.GetDurationEnvDefault("SR_PG_QUERY_TIMEOUT", time.Second*60)
-	errs = appendErr(errs, "SR_PG_QUERY_TIMEOUT", err)
+	dbQueryTimeout, err := utils.GetDurationEnvDefault("PG_QUERY_TIMEOUT", time.Second*60)
+	errs = appendErr(errs, "PG_QUERY_TIMEOUT", err)
 
 	// настройки MinIO
 	mnUser, err := utils.GetEnvDefault[string]("SR_MN_USER", "minio_root")

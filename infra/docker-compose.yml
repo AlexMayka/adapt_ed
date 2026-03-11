@@ -1,0 +1,119 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: adapt_ed_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PG_USER:-adapt_ed}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-adapt_ed_pass}
+      POSTGRES_DB: ${PG_DB:-adapt_ed}
+    ports:
+      - "${PG_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - adapt_ed_net
+
+  redis:
+    image: redis:7
+    container_name: adapt_ed_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - adapt_ed_net
+
+  node_exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: adapt_ed_node_exporter
+    restart: unless-stopped
+    ports:
+      - "${NODE_EXPORTER_PORT:-9101}:9100"
+    networks:
+      - adapt_ed_net
+
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: adapt_ed_prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9091}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - node_exporter
+    networks:
+      - adapt_ed_net
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: adapt_ed_loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yml"]
+    ports:
+      - "${LOKI_PORT:-3101}:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    networks:
+      - adapt_ed_net
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: adapt_ed_promtail
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    networks:
+      - adapt_ed_net
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: adapt_ed_grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - adapt_ed_net
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+
+networks:
+  adapt_ed_net:
+    name: adapt_ed_net

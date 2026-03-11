@@ -1,16 +1,23 @@
+INFRA_DIR=infra
+INFRA_COMPOSE=docker compose --env-file $(INFRA_DIR)/.env -f $(INFRA_DIR)/docker-compose.yml
+LOAD_ENV=@set -a; \
+	[ -f $(INFRA_DIR)/.env ] && . ./$(INFRA_DIR)/.env || true; \
+	[ -f ./.env ] && . ./.env || true; \
+	set +a;
+
 run:
 	echo "Запуск программы"
-	@set -a; . ./.env; set +a; \
+	$(LOAD_ENV) \
 	go run ./cmd/main.go
 
 build:
 	echo "Сборка бинарника"
-	go build -o bin/backend-sales-radar ./cmd
+	go build -o bin/adapt-ed-backend ./cmd
 
 
 run-cmd-make:
 	echo "Запуск бинарного файла"
-	./bin/backend-sales-radar
+	./bin/adapt-ed-backend
 
 create-migrations-goose-sql:
 	echo "Создание миграции SQL-file"
@@ -25,11 +32,40 @@ create-migrations-goose-go:
 
 migrate-status:
 	echo "Статус goose"
-	@set -a; . ./.env; set +a; \
-	goose -dir migrations postgres "host=$${SR_PG_HOST} port=$${SR_PG_PORT} user=$${SR_PG_USER} password=$${SR_PG_PASSWORD} dbname=$${SR_PG_DB} sslmode=disable" status
+	$(LOAD_ENV) \
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=disable" status
 
 migrate-up:
 	echo "Запуск миграций"
-	@set -a; . ./.env; set +a; \
-	goose -dir migrations postgres "host=$${SR_PG_HOST} port=$${SR_PG_PORT} user=$${SR_PG_USER} password=$${SR_PG_PASSWORD} dbname=$${SR_PG_DB} sslmode=disable" up
+	$(LOAD_ENV) \
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=disable" up
 
+
+APP_COMPOSE=docker compose --env-file $(INFRA_DIR)/.env --env-file .env
+
+app-up: infra-up
+	$(APP_COMPOSE) up -d --build
+
+app-down:
+	$(APP_COMPOSE) down
+
+app-rebuild: infra-up
+	$(APP_COMPOSE) up -d --build --force-recreate
+
+app-logs:
+	$(APP_COMPOSE) logs -f --tail=200
+
+infra-copy-env:
+	cp -n $(INFRA_DIR)/.env.example $(INFRA_DIR)/.env || true
+
+infra-up: infra-copy-env
+	$(INFRA_COMPOSE) up -d
+
+infra-down:
+	$(INFRA_COMPOSE) down -v
+
+infra-ps:
+	$(INFRA_COMPOSE) ps
+
+infra-logs:
+	$(INFRA_COMPOSE) logs -f --tail=200

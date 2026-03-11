@@ -1,52 +1,19 @@
 services:
-  bk_postgres:
-    image: postgres:17
-    restart: always
-    container_name: Backend_Postgres
-
-    environment:
-      POSTGRES_USER: ${SR_PG_USER}
-      POSTGRES_PASSWORD: ${SR_PG_PASSWORD}
-      POSTGRES_DB: ${SR_PG_DB}
-
+  app:
+    build: .
+    container_name: adapt_ed_backend
+    restart: unless-stopped
+    env_file:
+      - ./infra/.env
+      - .env
     ports:
-      - "${SR_PG_PORT}:5432"
+      - "${SR_AP_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - adapt_ed_net
 
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-
-  bk_minio:
-    image: quay.io/minio/minio:latest
-    restart: always
-
-    container_name: "Backend_Minio"
-
-    ports:
-      - "${SR_MN_PORT_API}:${SR_MN_PORT_API}"
-      - "${SR_MN_PORT_WEB}:${SR_MN_PORT_WEB}"
-
-    command: server /data --console-address ":${SR_MN_PORT_WEB}"
-    environment:
-      MINIO_ROOT_USER: "${SR_MN_USER}"
-      MINIO_ROOT_PASSWORD: "${SR_MN_PASSWORD}"
-
-    volumes:
-      - ./minio_data:/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:${SR_MN_PORT_API}/minio/health/live || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-
-volumes:
-  postgres_data:
+networks:
+  adapt_ed_net:
+    external: true

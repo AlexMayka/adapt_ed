@@ -51,26 +51,26 @@ func validateDB(db *DBConfig) error {
 	}
 
 	var errs []error
-	errs = appendErr(errs, "SR_PG_HOST", utils.ValidateEmptinessParam("SR_PG_HOST", db.Host))
-	errs = appendErr(errs, "SR_PG_PORT", utils.ValidatePort(db.Port))
-	errs = appendErr(errs, "SR_PG_USER", utils.ValidateEmptinessParam("SR_PG_USER", db.User))
-	errs = appendErr(errs, "SR_PG_PASSWORD", utils.ValidateEmptinessParam("SR_PG_PASSWORD", db.Password))
-	errs = appendErr(errs, "SR_PG_DB", utils.ValidateEmptinessParam("SR_PG_DB", db.Database))
-	errs = appendErr(errs, "SR_PG_MAX_CONNS", utils.ValidateParamMore("SR_PG_MAX_CONNS", db.MaxConns, 0))
+	errs = appendErr(errs, "PG_HOST", utils.ValidateEmptinessParam("PG_HOST", db.Host))
+	errs = appendErr(errs, "PG_PORT", utils.ValidatePort(db.Port))
+	errs = appendErr(errs, "PG_USER", utils.ValidateEmptinessParam("PG_USER", db.User))
+	errs = appendErr(errs, "PG_PASSWORD", utils.ValidateEmptinessParam("PG_PASSWORD", db.Password))
+	errs = appendErr(errs, "PG_DB", utils.ValidateEmptinessParam("PG_DB", db.Database))
+	errs = appendErr(errs, "PG_MAX_CONNS", utils.ValidateParamMore("PG_MAX_CONNS", db.MaxConns, 0))
 	if db.MinConns < 0 {
-		errs = append(errs, fmt.Errorf("SR_PG_MIN_CONNS: must be >= 0"))
+		errs = append(errs, fmt.Errorf("PG_MIN_CONNS: must be >= 0"))
 	}
 	if db.MinConns > db.MaxConns {
-		errs = append(errs, fmt.Errorf("SR_PG_MIN_CONNS: %d > SR_PG_MAX_CONNS: %d", db.MinConns, db.MaxConns))
+		errs = append(errs, fmt.Errorf("PG_MIN_CONNS: %d > PG_MAX_CONNS: %d", db.MinConns, db.MaxConns))
 	}
 	if db.ConnLifeTime <= 0 {
-		errs = append(errs, fmt.Errorf("SR_PG_CONN_LIFETIME: must be > 0"))
+		errs = append(errs, fmt.Errorf("PG_CONN_LIFETIME: must be > 0"))
 	}
 	if db.ConnIdleTime <= 0 {
-		errs = append(errs, fmt.Errorf("SR_PG_CONN_IDLE_TIME: must be > 0"))
+		errs = append(errs, fmt.Errorf("PG_CONN_IDLE_TIME: must be > 0"))
 	}
 	if db.QueryTimeout <= 0 {
-		errs = append(errs, fmt.Errorf("SR_PG_QUERY_TIMEOUT: must be > 0"))
+		errs = append(errs, fmt.Errorf("PG_QUERY_TIMEOUT: must be > 0"))
 	}
 
 	if len(errs) > 0 {
