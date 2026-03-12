@@ -7,14 +7,25 @@ import (
 	"time"
 )
 
+// EnvConfig contains settings for environment
+type EnvConfig struct {
+	Version  string
+	Instance string
+	Type     string
+}
+
 // AppConfig contains application-level runtime settings.
 type AppConfig struct {
-	Host   string
-	Port   int
-	Secret string
+	Service string
+	Host    string
+	Port    int
+	Secret  string
+}
 
-	Logging  bool
-	LogLevel string
+// LogConfig contains settings for logging
+type LogConfig struct {
+	IsLogging bool
+	LogLevel  string
 }
 
 // MinioConfig contains settings for S3-compatible object storage.
@@ -43,7 +54,9 @@ type DBConfig struct {
 
 // Config groups all runtime configuration sections.
 type Config struct {
+	Env   *EnvConfig
 	App   *AppConfig
+	Log   *LogConfig
 	DB    *DBConfig
 	Minio *MinioConfig
 }
@@ -61,21 +74,35 @@ func loadEnv() (*Config, error) {
 	var errs []error
 	var err error
 
+	// настройки окружения
+	appVersion, err := utils.GetEnv[string]("APP_VERSION")
+	errs = appendErr(errs, "APP_VERSION", err)
+
+	appInstance, err := utils.GetEnvDefault[string]("APP_INSTANCE", "local")
+	errs = appendErr(errs, "APP_INSTANCE", err)
+
+	envType, err := utils.GetEnvDefault[string]("APP_TYPE", "dev")
+	errs = appendErr(errs, "APP_TYPE", err)
+
 	// настройки приложения
-	appHost, err := utils.GetEnvDefault[string]("SR_AP_HOST", "localhost")
-	errs = appendErr(errs, "SR_AP_HOST", err)
+	appService, err := utils.GetEnvDefault[string]("APP_SERVICE", "backend_adapt_ed")
+	errs = appendErr(errs, "APP_SERVICE", err)
 
-	appPort, err := utils.GetEnvDefault[int]("SR_AP_PORT", 8000)
-	errs = appendErr(errs, "SR_AP_PORT", err)
+	appHost, err := utils.GetEnvDefault[string]("APP_HOST", "localhost")
+	errs = appendErr(errs, "APP_HOST", err)
 
-	appSecret, err := utils.GetEnv[string]("SR_AP_SECRET")
-	errs = appendErr(errs, "SR_AP_SECRET", err)
+	appPort, err := utils.GetEnvDefault[int]("APP_PORT", 8000)
+	errs = appendErr(errs, "APP_PORT", err)
 
-	appLogging, err := utils.GetEnvDefault[bool]("SR_AP_LOGGING", true)
-	errs = appendErr(errs, "SR_AP_LOGGING", err)
+	appSecret, err := utils.GetEnv[string]("APP_SECRET")
+	errs = appendErr(errs, "APP_SECRET", err)
 
-	appLogLevel, err := utils.GetEnvDefault[string]("SR_AP_LOG_LEVEL", "info")
-	errs = appendErr(errs, "SR_AP_LOG_LEVEL", err)
+	// логирование
+	appIsLogging, err := utils.GetEnvDefault[bool]("APP_IS_LOGGING", true)
+	errs = appendErr(errs, "APP_IS_LOGGING", err)
+
+	appLogLevel, err := utils.GetEnvDefault[string]("APP_LOG_LEVEL", "info")
+	errs = appendErr(errs, "APP_LOG_LEVEL", err)
 
 	// настройки БД
 	dbUser, err := utils.GetEnvDefault[string]("PG_USER", "postgres_root")
@@ -90,7 +117,7 @@ func loadEnv() (*Config, error) {
 	dbPort, err := utils.GetEnvDefault[int]("PG_PORT", 5433)
 	errs = appendErr(errs, "PG_PORT", err)
 
-	dbName, err := utils.GetEnvDefault[string]("PG_DB", "SALES_RADAR")
+	dbName, err := utils.GetEnvDefault[string]("PG_DB", "adapt_ed")
 	errs = appendErr(errs, "PG_DB", err)
 
 	dbMaxConns, err := utils.GetEnvDefault[int]("PG_MAX_CONNS", 20)
@@ -109,32 +136,40 @@ func loadEnv() (*Config, error) {
 	errs = appendErr(errs, "PG_QUERY_TIMEOUT", err)
 
 	// настройки MinIO
-	mnUser, err := utils.GetEnvDefault[string]("SR_MN_USER", "minio_root")
-	errs = appendErr(errs, "SR_MN_USER", err)
+	mnUser, err := utils.GetEnvDefault[string]("MINIO_USER", "minio_root")
+	errs = appendErr(errs, "MINIO_USER", err)
 
-	mnPassword, err := utils.GetEnv[string]("SR_MN_PASSWORD")
-	errs = appendErr(errs, "SR_MN_PASSWORD", err)
+	mnPassword, err := utils.GetEnv[string]("MINIO_PASSWORD")
+	errs = appendErr(errs, "MINIO_PASSWORD", err)
 
-	mnHost, err := utils.GetEnvDefault[string]("SR_MN_HOST", "localhost")
-	errs = appendErr(errs, "SR_MN_HOST", err)
+	mnHost, err := utils.GetEnvDefault[string]("MINIO_HOST", "localhost")
+	errs = appendErr(errs, "MINIO_HOST", err)
 
-	mnPortAPI, err := utils.GetEnvDefault[int]("SR_MN_PORT_API", 9000)
-	errs = appendErr(errs, "SR_MN_PORT_API", err)
+	mnPortAPI, err := utils.GetEnvDefault[int]("MINIO_PORT_API", 9000)
+	errs = appendErr(errs, "MINIO_PORT_API", err)
 
-	mnBucket, err := utils.GetEnvDefault[string]("SR_MN_BUCKET", "Sales_Radar")
-	errs = appendErr(errs, "SR_MN_BUCKET", err)
+	mnBucket, err := utils.GetEnvDefault[string]("MINIO_BUCKET", "adapt_ed")
+	errs = appendErr(errs, "MINIO_BUCKET", err)
 
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("config initialization failed: %w", errors.Join(errs...))
 	}
 
 	return &Config{
+		Env: &EnvConfig{
+			Version:  appVersion,
+			Instance: appInstance,
+			Type:     envType,
+		},
 		App: &AppConfig{
-			Host:     appHost,
-			Port:     appPort,
-			Secret:   appSecret,
-			Logging:  appLogging,
-			LogLevel: appLogLevel,
+			Service: appService,
+			Host:    appHost,
+			Port:    appPort,
+			Secret:  appSecret,
+		},
+		Log: &LogConfig{
+			IsLogging: appIsLogging,
+			LogLevel:  appLogLevel,
 		},
 		DB: &DBConfig{
 			Host:     dbHost,

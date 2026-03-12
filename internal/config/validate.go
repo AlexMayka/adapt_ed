@@ -17,6 +17,8 @@ func (c *Config) Validate() error {
 	errs = appendErr(errs, "app", validateApp(c.App))
 	errs = appendErr(errs, "db", validateDB(c.DB))
 	errs = appendErr(errs, "minio", validateMinio(c.Minio))
+	errs = appendErr(errs, "log", validateLog(c.Log))
+	errs = appendErr(errs, "env", validateEnv(c.Env))
 
 	if len(errs) > 0 {
 		return fmt.Errorf("%w: %w", utils.ErrValidationFailed, errors.Join(errs...))
@@ -28,14 +30,47 @@ func (c *Config) Validate() error {
 // validateApp validates application-specific settings.
 func validateApp(app *AppConfig) error {
 	if app == nil {
-		return errors.New("app config is nil")
+		return fmt.Errorf("%w: app is nil", utils.ErrValidationFailed)
 	}
 
 	var errs []error
-	errs = appendErr(errs, "SR_AP_HOST", utils.ValidateEmptinessParam("SR_AP_HOST", app.Host))
-	errs = appendErr(errs, "SR_AP_PORT", utils.ValidatePort(app.Port))
-	errs = appendErr(errs, "SR_AP_SECRET", utils.ValidateEmptinessParam("SR_AP_SECRET", app.Secret))
-	errs = appendErr(errs, "SR_AP_LOG_LEVEL", utils.ValidateLogLevel(app.LogLevel))
+	errs = appendErr(errs, "APP_SERVICE", utils.ValidateEmptinessParam("APP_SERVICE", app.Service))
+	errs = appendErr(errs, "APP_HOST", utils.ValidateEmptinessParam("APP_HOST", app.Host))
+	errs = appendErr(errs, "APP_PORT", utils.ValidatePort(app.Port))
+	errs = appendErr(errs, "APP_SECRET", utils.ValidateEmptinessParam("APP_SECRET", app.Secret))
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// validateLog validates application logger settings.
+func validateLog(log *LogConfig) error {
+	if log == nil {
+		return fmt.Errorf("%w: log is nil", utils.ErrValidationFailed)
+	}
+
+	var errs []error
+	errs = appendErr(errs, "APP_LOG_LEVEL", utils.ValidateLogLevel(log.LogLevel))
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+func validateEnv(env *EnvConfig) error {
+	if env == nil {
+		return fmt.Errorf("%w: env is nil", utils.ErrValidationFailed)
+	}
+
+	var errs []error
+	errs = appendErr(errs, "APP_VERSION", utils.ValidateVersion(env.Version))
+	errs = appendErr(errs, "APP_INSTANCE", utils.ValidateInstance(env.Instance))
+	errs = appendErr(errs, "ENV_TYPE", utils.ValidateEnv(env.Type))
 
 	if len(errs) > 0 {
 		return errors.Join(errs...)
@@ -47,7 +82,7 @@ func validateApp(app *AppConfig) error {
 // validateDB validates PostgreSQL connection and pool settings.
 func validateDB(db *DBConfig) error {
 	if db == nil {
-		return errors.New("db config is nil")
+		return fmt.Errorf("%w: db is nil", utils.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -83,15 +118,15 @@ func validateDB(db *DBConfig) error {
 // validateMinio validates object storage connection settings.
 func validateMinio(minio *MinioConfig) error {
 	if minio == nil {
-		return errors.New("minio config is nil")
+		return fmt.Errorf("%w: minio is nil", utils.ErrValidationFailed)
 	}
 
 	var errs []error
-	errs = appendErr(errs, "SR_MN_HOST", utils.ValidateEmptinessParam("SR_MN_HOST", minio.Host))
-	errs = appendErr(errs, "SR_MN_USER", utils.ValidateEmptinessParam("SR_MN_USER", minio.User))
-	errs = appendErr(errs, "SR_MN_PASSWORD", utils.ValidateEmptinessParam("SR_MN_PASSWORD", minio.Password))
-	errs = appendErr(errs, "SR_MN_BUCKET", utils.ValidateEmptinessParam("SR_MN_BUCKET", minio.Bucket))
-	errs = appendErr(errs, "SR_MN_PORT_API", utils.ValidatePort(minio.ApiPort))
+	errs = appendErr(errs, "MINIO_HOST", utils.ValidateEmptinessParam("MINIO_HOST", minio.Host))
+	errs = appendErr(errs, "MINIO_USER", utils.ValidateEmptinessParam("MINIO_USER", minio.User))
+	errs = appendErr(errs, "MINIO_PASSWORD", utils.ValidateEmptinessParam("MINIO_PASSWORD", minio.Password))
+	errs = appendErr(errs, "MINIO_BUCKET", utils.ValidateEmptinessParam("MINIO_BUCKET", minio.Bucket))
+	errs = appendErr(errs, "MINIO_PORT_API", utils.ValidatePort(minio.ApiPort))
 
 	if len(errs) > 0 {
 		return errors.Join(errs...)

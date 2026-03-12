@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -17,6 +18,18 @@ var (
 	ErrCheckMore = errors.New("the parameter is less than the required value")
 	// ErrCheckLevel indicates that log level is not in the allowed set.
 	ErrCheckLevel = errors.New("invalid level")
+	// ErrLackVersion indicates that count numbers in version
+	ErrLackVersion = errors.New("lack of numbers")
+	// ErrMustBeNumber indicates that no int number
+	ErrMustBeNumber = errors.New("must be a int number")
+	// ErrNoSupportInstance indicates that no support Instance
+	ErrNoSupportInstance = errors.New("no support Instance")
+	// ErrEmptinessInstance indicates that a required string value is empty.
+	ErrEmptinessInstance = errors.New("emptiness instance")
+	// ErrEmptinessEnv indicates that a required string value is empty.
+	ErrEmptinessEnv = errors.New("emptiness Env")
+	// ErrNoSupportEnv indicates that no support Env
+	ErrNoSupportEnv = errors.New("no support Env")
 )
 
 // SupportedParamMore lists numeric types supported by ValidateParamMore.
@@ -29,6 +42,16 @@ var logLevel = map[string]struct{}{
 	"info":  {},
 	"warn":  {},
 	"error": {},
+}
+
+var instances = map[string]struct{}{
+	"local": {},
+	"prod":  {},
+}
+
+var envType = map[string]struct{}{
+	"dev":  {},
+	"prod": {},
 }
 
 // ValidatePort checks that port is in range 1..65535.
@@ -53,6 +76,50 @@ func ValidateEmptinessParam(name, value string) error {
 func ValidateParamMore[T SupportedParamMore](name string, param T, check T) error {
 	if param <= check {
 		return fmt.Errorf("%w: %s=%v <= %v", ErrCheckMore, name, param, check)
+	}
+
+	return nil
+}
+
+func ValidateVersion(value string) error {
+	split := strings.Split(value, ".")
+
+	if len(split) != 3 {
+		return fmt.Errorf("%w: %s (example 20.10.10)", ErrLackVersion, value)
+	}
+
+	for index, v := range split {
+		if n, err := strconv.Atoi(v); err != nil {
+			return fmt.Errorf("%v - %w: %s (example 20.10.10)", index+1, ErrMustBeNumber, n)
+		}
+	}
+
+	return nil
+}
+
+// ValidateInstance checks instance that instance is one of local/prod
+func ValidateInstance(value string) error {
+	level := strings.ToLower(strings.TrimSpace(value))
+	if len(level) == 0 {
+		return fmt.Errorf("%w: %s", ErrEmptinessInstance, value)
+	}
+
+	if _, ok := instances[level]; !ok {
+		return fmt.Errorf("%w: %s", ErrNoSupportInstance, value)
+	}
+
+	return nil
+}
+
+// ValidateEnv checks env that instance is one of local/prod
+func ValidateEnv(value string) error {
+	level := strings.ToLower(strings.TrimSpace(value))
+	if len(level) == 0 {
+		return fmt.Errorf("%w: %s", ErrEmptinessEnv, value)
+	}
+
+	if _, ok := envType[level]; !ok {
+		return fmt.Errorf("%w: %s", ErrNoSupportEnv, value)
 	}
 
 	return nil
