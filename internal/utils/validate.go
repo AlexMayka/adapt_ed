@@ -89,8 +89,8 @@ func ValidateVersion(value string) error {
 	}
 
 	for index, v := range split {
-		if n, err := strconv.Atoi(v); err != nil {
-			return fmt.Errorf("%v - %w: %s (example 20.10.10)", index+1, ErrMustBeNumber, n)
+		if _, err := strconv.Atoi(v); err != nil {
+			return fmt.Errorf("%v - %w: %v (example 20.10.10)", index+1, ErrMustBeNumber, v)
 		}
 	}
 
