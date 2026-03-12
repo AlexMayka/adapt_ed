@@ -18,26 +18,34 @@ const (
 )
 
 var wantConfig = Config{
+	Env: &EnvConfig{
+		Version:  "1.0.0",
+		Instance: "local",
+		Type:     "dev",
+	},
 	App: &AppConfig{
-		Host:     "localhost",
-		Port:     8000,
-		Secret:   "secret",
-		Logging:  true,
-		LogLevel: "info",
+		Service: "backend_adapt_ed",
+		Host:    "localhost",
+		Port:    8000,
+		Secret:  "secret",
+	},
+	Log: &LogConfig{
+		IsLogging: true,
+		LogLevel:  "info",
 	},
 	Minio: &MinioConfig{
-		User:     "minio_root",
+		User:     "adapt_ed",
 		Password: "123",
 		Host:     "localhost",
 		ApiPort:  9000,
-		Bucket:   "Sales_Radar",
+		Bucket:   "adapt_ed",
 	},
 	DB: &DBConfig{
-		User:     "postgres_root",
+		User:     "adapt_ed",
 		Password: "123",
 		Host:     "localhost",
 		Port:     5433,
-		Database: "SALES_RADAR",
+		Database: "adapt_ed",
 
 		MaxConns:     20,
 		MinConns:     5,

@@ -27,7 +27,7 @@ func TestValidate(t *testing.T) {
 			name: "invalid log level",
 			cfg: func() *Config {
 				cfg := validConfig()
-				cfg.App.LogLevel = "verbose"
+				cfg.Log.LogLevel = "verbose"
 				return cfg
 			}(),
 			wantErr: true,
@@ -106,6 +106,69 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "invalid version format",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Env.Version = "v1.0"
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "invalid instance",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Env.Instance = "staging"
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "invalid env type",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Env.Type = "testing"
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "empty app service",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.App.Service = ""
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "empty app host",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.App.Host = "   "
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "nil env config",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Env = nil
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "nil log config",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Log = nil
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
 			name:    "nil config",
 			cfg:     nil,
 			wantErr: true,
@@ -125,19 +188,27 @@ func TestValidate(t *testing.T) {
 // validConfig returns a known-good config used as a base fixture in tests.
 func validConfig() *Config {
 	return &Config{
+		Env: &EnvConfig{
+			Version:  "1.0.0",
+			Instance: "local",
+			Type:     "dev",
+		},
 		App: &AppConfig{
-			Host:     "localhost",
-			Port:     8000,
-			Secret:   "secret",
-			Logging:  true,
-			LogLevel: "info",
+			Service: "backend_adapt_ed",
+			Host:    "localhost",
+			Port:    8000,
+			Secret:  "secret",
+		},
+		Log: &LogConfig{
+			IsLogging: true,
+			LogLevel:  "info",
 		},
 		DB: &DBConfig{
 			Host:         "localhost",
 			Port:         5433,
-			User:         "postgres_root",
+			User:         "adapt_ed",
 			Password:     "123",
-			Database:     "SALES_RADAR",
+			Database:     "adapt_ed",
 			MaxConns:     20,
 			MinConns:     5,
 			ConnLifeTime: 60,
@@ -146,9 +217,9 @@ func validConfig() *Config {
 		},
 		Minio: &MinioConfig{
 			Host:     "localhost",
-			User:     "minio_root",
+			User:     "adapt_ed",
 			Password: "123",
-			Bucket:   "Sales_Radar",
+			Bucket:   "adapt_ed",
 			ApiPort:  9000,
 		},
 	}
