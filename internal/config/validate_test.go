@@ -88,6 +88,24 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "db health check period is zero",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.DB.HealthCheckPeriod = 0
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "db ping timeout is zero",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.DB.PingTimeout = 0
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
 			name: "db min conns is negative",
 			cfg: func() *Config {
 				cfg := validConfig()
@@ -209,11 +227,13 @@ func validConfig() *Config {
 			User:         "adapt_ed",
 			Password:     "123",
 			Database:     "adapt_ed",
-			MaxConns:     20,
-			MinConns:     5,
-			ConnLifeTime: 60,
-			ConnIdleTime: 60,
-			QueryTimeout: 60,
+			MaxConns:          20,
+			MinConns:          5,
+			ConnLifeTime:      60,
+			ConnIdleTime:      60,
+			QueryTimeout:      60,
+			HealthCheckPeriod: 30,
+			PingTimeout:       5,
 		},
 		Minio: &MinioConfig{
 			Host:     "localhost",

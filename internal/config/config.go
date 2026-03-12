@@ -45,11 +45,13 @@ type DBConfig struct {
 	Password string
 	Database string
 
-	MaxConns     int
-	MinConns     int
-	ConnLifeTime time.Duration
-	ConnIdleTime time.Duration
-	QueryTimeout time.Duration
+	MaxConns          int32
+	MinConns          int32
+	ConnLifeTime      time.Duration
+	ConnIdleTime      time.Duration
+	QueryTimeout      time.Duration
+	HealthCheckPeriod time.Duration
+	PingTimeout       time.Duration
 }
 
 // Config groups all runtime configuration sections.
@@ -120,10 +122,10 @@ func loadEnv() (*Config, error) {
 	dbName, err := utils.GetEnvDefault[string]("PG_DB", "adapt_ed")
 	errs = appendErr(errs, "PG_DB", err)
 
-	dbMaxConns, err := utils.GetEnvDefault[int]("PG_MAX_CONNS", 20)
+	dbMaxConns, err := utils.GetEnvDefault[int32]("PG_MAX_CONNS", 20)
 	errs = appendErr(errs, "PG_MAX_CONNS", err)
 
-	dbMinConns, err := utils.GetEnvDefault[int]("PG_MIN_CONNS", 20)
+	dbMinConns, err := utils.GetEnvDefault[int32]("PG_MIN_CONNS", 20)
 	errs = appendErr(errs, "PG_MIN_CONNS", err)
 
 	dbConnLifetime, err := utils.GetDurationEnvDefault("PG_CONN_LIFETIME", time.Second*60)
@@ -134,6 +136,12 @@ func loadEnv() (*Config, error) {
 
 	dbQueryTimeout, err := utils.GetDurationEnvDefault("PG_QUERY_TIMEOUT", time.Second*60)
 	errs = appendErr(errs, "PG_QUERY_TIMEOUT", err)
+
+	dbHealthCheck, err := utils.GetDurationEnvDefault("PG_HEALTH_CHECK_PERIOD", time.Second*30)
+	errs = appendErr(errs, "PG_HEALTH_CHECK_PERIOD", err)
+
+	dbPingTimeout, err := utils.GetDurationEnvDefault("PG_PING_TIMEOUT", time.Second*5)
+	errs = appendErr(errs, "PG_PING_TIMEOUT", err)
 
 	// настройки MinIO
 	mnUser, err := utils.GetEnvDefault[string]("MINIO_USER", "minio_root")
@@ -178,11 +186,13 @@ func loadEnv() (*Config, error) {
 			Database: dbName,
 			Port:     dbPort,
 
-			MaxConns:     dbMaxConns,
-			MinConns:     dbMinConns,
-			ConnLifeTime: dbConnLifetime,
-			ConnIdleTime: dbConnIdleTime,
-			QueryTimeout: dbQueryTimeout,
+			MaxConns:          dbMaxConns,
+			MinConns:          dbMinConns,
+			ConnLifeTime:      dbConnLifetime,
+			ConnIdleTime:      dbConnIdleTime,
+			QueryTimeout:      dbQueryTimeout,
+			HealthCheckPeriod: dbHealthCheck,
+			PingTimeout:       dbPingTimeout,
 		},
 		Minio: &MinioConfig{
 			Host:     mnHost,

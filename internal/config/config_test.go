@@ -47,11 +47,13 @@ var wantConfig = Config{
 		Port:     5433,
 		Database: "adapt_ed",
 
-		MaxConns:     20,
-		MinConns:     5,
-		ConnLifeTime: time.Duration(time.Second * 60),
-		ConnIdleTime: time.Duration(time.Second * 60),
-		QueryTimeout: time.Duration(time.Second * 60),
+		MaxConns:          20,
+		MinConns:          5,
+		ConnLifeTime:      time.Duration(time.Second * 60),
+		ConnIdleTime:      time.Duration(time.Second * 60),
+		QueryTimeout:      time.Duration(time.Second * 60),
+		HealthCheckPeriod: time.Duration(time.Second * 30),
+		PingTimeout:       time.Duration(time.Second * 5),
 	},
 }
 

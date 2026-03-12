@@ -107,6 +107,12 @@ func validateDB(db *DBConfig) error {
 	if db.QueryTimeout <= 0 {
 		errs = append(errs, fmt.Errorf("PG_QUERY_TIMEOUT: must be > 0"))
 	}
+	if db.HealthCheckPeriod <= 0 {
+		errs = append(errs, fmt.Errorf("PG_HEALTH_CHECK_PERIOD: must be > 0"))
+	}
+	if db.PingTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("PG_PING_TIMEOUT: must be > 0"))
+	}
 
 	if len(errs) > 0 {
 		return errors.Join(errs...)
