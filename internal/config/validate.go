@@ -92,24 +92,31 @@ func validateDB(db *DBConfig) error {
 	errs = appendErr(errs, "PG_PASSWORD", utils.ValidateEmptinessParam("PG_PASSWORD", db.Password))
 	errs = appendErr(errs, "PG_DB", utils.ValidateEmptinessParam("PG_DB", db.Database))
 	errs = appendErr(errs, "PG_MAX_CONNS", utils.ValidateParamMore("PG_MAX_CONNS", db.MaxConns, 0))
+
 	if db.MinConns < 0 {
 		errs = append(errs, fmt.Errorf("PG_MIN_CONNS: must be >= 0"))
 	}
+
 	if db.MinConns > db.MaxConns {
 		errs = append(errs, fmt.Errorf("PG_MIN_CONNS: %d > PG_MAX_CONNS: %d", db.MinConns, db.MaxConns))
 	}
+
 	if db.ConnLifeTime <= 0 {
 		errs = append(errs, fmt.Errorf("PG_CONN_LIFETIME: must be > 0"))
 	}
+
 	if db.ConnIdleTime <= 0 {
 		errs = append(errs, fmt.Errorf("PG_CONN_IDLE_TIME: must be > 0"))
 	}
+
 	if db.QueryTimeout <= 0 {
 		errs = append(errs, fmt.Errorf("PG_QUERY_TIMEOUT: must be > 0"))
 	}
+
 	if db.HealthCheckPeriod <= 0 {
 		errs = append(errs, fmt.Errorf("PG_HEALTH_CHECK_PERIOD: must be > 0"))
 	}
+
 	if db.PingTimeout <= 0 {
 		errs = append(errs, fmt.Errorf("PG_PING_TIMEOUT: must be > 0"))
 	}
@@ -133,6 +140,7 @@ func validateMinio(minio *MinioConfig) error {
 	errs = appendErr(errs, "MINIO_PASSWORD", utils.ValidateEmptinessParam("MINIO_PASSWORD", minio.Password))
 	errs = appendErr(errs, "MINIO_BUCKET", utils.ValidateEmptinessParam("MINIO_BUCKET", minio.Bucket))
 	errs = appendErr(errs, "MINIO_PORT_API", utils.ValidatePort(minio.ApiPort))
+	errs = appendErr(errs, "MINIO_REGION_NAME", utils.ValidateEmptinessParam("MINIO_REGION_NAME", minio.RegionName))
 
 	if len(errs) > 0 {
 		return errors.Join(errs...)

@@ -35,6 +35,10 @@ type MinioConfig struct {
 	Password string
 	Bucket   string
 	ApiPort  int
+
+	RegionName    string
+	ObjectLocking bool
+	ForceCreate   bool
 }
 
 // DBConfig contains PostgreSQL connection and pool settings.
@@ -159,6 +163,15 @@ func loadEnv() (*Config, error) {
 	mnBucket, err := utils.GetEnvDefault[string]("MINIO_BUCKET", "adapt_ed")
 	errs = appendErr(errs, "MINIO_BUCKET", err)
 
+	mnRegion, err := utils.GetEnvDefault[string]("MINIO_REGION", "us-east-1")
+	errs = appendErr(errs, "MINIO_REGION", err)
+
+	mnObjectLocking, err := utils.GetEnvDefault[bool]("MINIO_OBJECT_LOCKING", false)
+	errs = appendErr(errs, "MINIO_OBJECT_LOCKING", err)
+
+	mnForceCreate, err := utils.GetEnvDefault[bool]("MINIO_FORCE_CREATE", false)
+	errs = appendErr(errs, "MINIO_FORCE_CREATE", err)
+
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("config initialization failed: %w", errors.Join(errs...))
 	}
@@ -200,6 +213,10 @@ func loadEnv() (*Config, error) {
 			Password: mnPassword,
 			Bucket:   mnBucket,
 			ApiPort:  mnPortAPI,
+
+			RegionName:    mnRegion,
+			ObjectLocking: mnObjectLocking,
+			ForceCreate:   mnForceCreate,
 		},
 	}, nil
 }

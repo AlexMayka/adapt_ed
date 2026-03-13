@@ -69,3 +69,9 @@ infra-ps:
 
 infra-logs:
 	$(INFRA_COMPOSE) logs -f --tail=200
+
+test:
+	go test ./...
+
+test-integration:
+	go test -tags=integration -v -count=1 ./internal/storage/postgres/ ./internal/storage/minio/

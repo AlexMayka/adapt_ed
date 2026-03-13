@@ -236,11 +236,12 @@ func validConfig() *Config {
 			PingTimeout:       5,
 		},
 		Minio: &MinioConfig{
-			Host:     "localhost",
-			User:     "adapt_ed",
-			Password: "123",
-			Bucket:   "adapt_ed",
-			ApiPort:  9000,
+			Host:       "localhost",
+			User:       "adapt_ed",
+			Password:   "123",
+			Bucket:     "adapt_ed",
+			ApiPort:    9000,
+			RegionName: "us-east-1",
 		},
 	}
 }

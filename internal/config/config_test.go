@@ -34,11 +34,12 @@ var wantConfig = Config{
 		LogLevel:  "info",
 	},
 	Minio: &MinioConfig{
-		User:     "adapt_ed",
-		Password: "123",
-		Host:     "localhost",
-		ApiPort:  9000,
-		Bucket:   "adapt_ed",
+		User:       "adapt_ed",
+		Password:   "123",
+		Host:       "localhost",
+		ApiPort:    9000,
+		Bucket:     "adapt_ed",
+		RegionName: "us-east-1",
 	},
 	DB: &DBConfig{
 		User:     "adapt_ed",
