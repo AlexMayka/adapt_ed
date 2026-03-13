@@ -9,6 +9,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// PgConnInfo holds connection parameters for a test PostgreSQL container.
 type PgConnInfo struct {
 	Host     string
 	Port     int
@@ -17,6 +18,7 @@ type PgConnInfo struct {
 	Database string
 }
 
+// MinioConnInfo holds connection parameters for a test MinIO container.
 type MinioConnInfo struct {
 	Host     string
 	Port     int
@@ -24,12 +26,15 @@ type MinioConnInfo struct {
 	Password string
 }
 
+// RedisConnInfo holds connection parameters for a test Redis container.
 type RedisConnInfo struct {
 	Host     string
 	Port     int
 	Password string
 }
 
+// StartPostgres launches a postgres:17 container and returns its connection info.
+// Caller is responsible for terminating the container via container.Terminate().
 func StartPostgres(ctx context.Context) (testcontainers.Container, PgConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:17",
@@ -71,6 +76,8 @@ func StartPostgres(ctx context.Context) (testcontainers.Container, PgConnInfo, e
 	}, nil
 }
 
+// StartMinio launches a minio/minio:latest container and returns its connection info.
+// Caller is responsible for terminating the container via container.Terminate().
 func StartMinio(ctx context.Context) (testcontainers.Container, MinioConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "minio/minio:latest",
@@ -111,6 +118,8 @@ func StartMinio(ctx context.Context) (testcontainers.Container, MinioConnInfo, e
 	}, nil
 }
 
+// StartRedis launches a redis:7 container with password auth and returns its connection info.
+// Caller is responsible for terminating the container via container.Terminate().
 func StartRedis(ctx context.Context) (testcontainers.Container, RedisConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:7",

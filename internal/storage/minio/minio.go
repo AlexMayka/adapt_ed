@@ -24,6 +24,7 @@ var (
 	ErrListObjects    = errors.New("failed to list objects")
 )
 
+// ObjectInfo contains metadata about a stored object without exposing MinIO SDK types.
 type ObjectInfo struct {
 	Name         string
 	Size         int64
@@ -31,11 +32,13 @@ type ObjectInfo struct {
 	LastModified time.Time
 }
 
+// Storage wraps a MinIO client scoped to a single bucket.
 type Storage struct {
 	client *minio.Client
 	bucket string
 }
 
+// Init creates a MinIO client, checks if the target bucket exists and creates it if needed.
 func Init(ctx context.Context, host string, port int, user, password, bucket, region string, objectLocking, useSSL bool) (*Storage, error) {
 	client, err := minio.New(fmt.Sprintf("%s:%d", host, port), &minio.Options{
 		Creds:  credentials.NewStaticV4(user, password, ""),
@@ -65,11 +68,14 @@ func Init(ctx context.Context, host string, port int, user, password, bucket, re
 	return stg, nil
 }
 
+// Close releases the MinIO client reference.
 func (s *Storage) Close() error {
 	s.client = nil
 	return nil
 }
 
+// PutObject uploads data from reader into the bucket under objectName.
+// Content-Type is auto-detected from the file extension; size must match the reader length.
 func (s *Storage) PutObject(ctx context.Context, objectName string, reader io.Reader, size int64, extraMeta map[string]string) (minio.UploadInfo, error) {
 	ct := mime.TypeByExtension(filepath.Ext(objectName))
 	if ct == "" {
@@ -84,6 +90,7 @@ func (s *Storage) PutObject(ctx context.Context, objectName string, reader io.Re
 	return s.client.PutObject(ctx, s.bucket, objectName, reader, size, opts)
 }
 
+// GetObject returns the full object content as an io.ReadCloser. Caller must close it.
 func (s *Storage) GetObject(ctx context.Context, name string) (io.ReadCloser, error) {
 	reader, err := s.client.GetObject(ctx, s.bucket, name, minio.GetObjectOptions{})
 	if err != nil {
@@ -92,6 +99,7 @@ func (s *Storage) GetObject(ctx context.Context, name string) (io.ReadCloser, er
 	return reader, nil
 }
 
+// GetObjectRange returns a byte range [start, end] of the object. Caller must close the reader.
 func (s *Storage) GetObjectRange(ctx context.Context, name string, start, end int64) (io.ReadCloser, error) {
 	opts := minio.GetObjectOptions{}
 	if err := opts.SetRange(start, end); err != nil {
@@ -105,6 +113,7 @@ func (s *Storage) GetObjectRange(ctx context.Context, name string, start, end in
 	return reader, nil
 }
 
+// StatObject returns metadata (size, content-type, etc.) for the named object.
 func (s *Storage) StatObject(ctx context.Context, name string) (minio.ObjectInfo, error) {
 	info, err := s.client.StatObject(ctx, s.bucket, name, minio.StatObjectOptions{})
 	if err != nil {
@@ -114,6 +123,7 @@ func (s *Storage) StatObject(ctx context.Context, name string) (minio.ObjectInfo
 	return info, nil
 }
 
+// RemoveObject deletes the named object from the bucket.
 func (s *Storage) RemoveObject(ctx context.Context, name string) error {
 	err := s.client.RemoveObject(ctx, s.bucket, name, minio.RemoveObjectOptions{})
 	if err != nil {
@@ -122,6 +132,8 @@ func (s *Storage) RemoveObject(ctx context.Context, name string) error {
 	return nil
 }
 
+// ListObjects returns all objects matching the prefix. When recursive is false,
+// only the top-level entries under the prefix are returned.
 func (s *Storage) ListObjects(ctx context.Context, prefix string, recursive bool) ([]ObjectInfo, error) {
 	var objects []ObjectInfo
 	for obj := range s.client.ListObjects(ctx, s.bucket, minio.ListObjectsOptions{

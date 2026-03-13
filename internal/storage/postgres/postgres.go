@@ -9,16 +9,22 @@ import (
 )
 
 var (
+	// ErrParseConfig returned when the DSN string cannot be parsed.
 	ErrParseConfig = errors.New("failed to parse config")
-	ErrCreatePool  = errors.New("failed to create pool")
-	ErrPing        = errors.New("failed to ping")
+	// ErrCreatePool returned when pgxpool fails to initialize.
+	ErrCreatePool = errors.New("failed to create pool")
+	// ErrPing returned when the initial health-check ping fails.
+	ErrPing = errors.New("failed to ping")
 )
 
+// PoolPsg wraps a pgxpool.Pool with a query timeout for convenience.
 type PoolPsg struct {
 	Pool         *pgxpool.Pool
 	QueryTimeout time.Duration
 }
 
+// NewPool creates a PostgreSQL connection pool, configures its limits and verifies
+// connectivity with a ping bounded by pingTimeout.
 func NewPool(ctx context.Context, host, user, password, name string, port int, maxConns, minConns int32,
 	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration, sslMode string) (*PoolPsg, error) {
 
@@ -50,6 +56,7 @@ func NewPool(ctx context.Context, host, user, password, name string, port int, m
 	return &PoolPsg{Pool: pool, QueryTimeout: queryTimeout}, nil
 }
 
+// Close releases all connections in the pool.
 func (p *PoolPsg) Close() error {
 	if p.Pool != nil {
 		p.Pool.Close()
