@@ -33,12 +33,12 @@ create-migrations-goose-go:
 migrate-status:
 	echo "Статус goose"
 	$(LOAD_ENV) \
-	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=disable" status
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" status
 
 migrate-up:
 	echo "Запуск миграций"
 	$(LOAD_ENV) \
-	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=disable" up
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" up
 
 
 APP_COMPOSE=docker compose --env-file $(ENV_FILE)
@@ -74,4 +74,4 @@ test:
 	go test ./...
 
 test-integration:
-	go test -tags=integration -v -count=1 ./internal/storage/postgres/ ./internal/storage/minio/
+	go test -tags=integration -v -count=1 ./internal/storage/postgres/ ./internal/storage/minio/ ./internal/storage/redis/
