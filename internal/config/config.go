@@ -62,11 +62,13 @@ type DBConfig struct {
 
 // RedisConfig contains Redis connection settings.
 type RedisConfig struct {
-	Host     string
-	Port     int
-	Password string
-	DB       int
-	UseSSL   bool
+	Host       string
+	Port       int
+	Password   string
+	DB         int
+	UseSSL     bool
+	MaxRetries int
+	Timeout    time.Duration
 }
 
 // Config groups all runtime configuration sections.
@@ -206,6 +208,12 @@ func loadEnv() (*Config, error) {
 	rdUseSSL, err := utils.GetEnvDefault[bool]("REDIS_USE_SSL", false)
 	errs = appendErr(errs, "REDIS_USE_SSL", err)
 
+	rdMaxRetries, err := utils.GetEnvDefault[int]("REDIS_MAX_RETRIES", 3)
+	errs = appendErr(errs, "REDIS_MAX_RETRIES", err)
+
+	rdTimeout, err := utils.GetDurationEnvDefault("REDIS_TIMEOUT", 10*time.Second)
+	errs = appendErr(errs, "REDIS_TIMEOUT", err)
+
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("config initialization failed: %w", errors.Join(errs...))
 	}
@@ -255,11 +263,13 @@ func loadEnv() (*Config, error) {
 			ForceCreate:   mnForceCreate,
 		},
 		Redis: &RedisConfig{
-			Host:     rdHost,
-			Port:     rdPort,
-			Password: rdPassword,
-			DB:       rdDB,
-			UseSSL:   rdUseSSL,
+			Host:       rdHost,
+			Port:       rdPort,
+			Password:   rdPassword,
+			DB:         rdDB,
+			UseSSL:     rdUseSSL,
+			MaxRetries: rdMaxRetries,
+			Timeout:    rdTimeout,
 		},
 	}, nil
 }

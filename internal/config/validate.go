@@ -166,6 +166,14 @@ func validateRedis(redis *RedisConfig) error {
 		errs = append(errs, fmt.Errorf("REDIS_DB: must be >= 0"))
 	}
 
+	if redis.MaxRetries < 0 {
+		errs = append(errs, fmt.Errorf("REDIS_MAX_RETRIES: must be >= 0"))
+	}
+
+	if redis.Timeout <= 0 {
+		errs = append(errs, fmt.Errorf("REDIS_TIMEOUT: must be > 0"))
+	}
+
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}

@@ -58,9 +58,11 @@ var wantConfig = Config{
 		PingTimeout:       time.Duration(time.Second * 5),
 	},
 	Redis: &RedisConfig{
-		Host:     "localhost",
-		Port:     6379,
-		Password: "123",
+		Host:       "localhost",
+		Port:       6379,
+		Password:   "123",
+		MaxRetries: 3,
+		Timeout:    10 * time.Second,
 	},
 }
 

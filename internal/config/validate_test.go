@@ -290,9 +290,11 @@ func validConfig() *Config {
 			RegionName: "us-east-1",
 		},
 		Redis: &RedisConfig{
-			Host:     "localhost",
-			Port:     6379,
-			Password: "123",
+			Host:       "localhost",
+			Port:       6379,
+			Password:   "123",
+			MaxRetries: 3,
+			Timeout:    10,
 		},
 	}
 }
