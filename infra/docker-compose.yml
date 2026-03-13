@@ -26,13 +26,13 @@ services:
     image: redis:8
     container_name: adapt_ed_redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-mypassword}"]
     ports:
       - "${REDIS_PORT:-6380}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-mypassword}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
