@@ -36,10 +36,10 @@ type Storage struct {
 	bucket string
 }
 
-func Init(ctx context.Context, host string, port int, user, password, bucket, region string, objectLocking bool) (*Storage, error) {
+func Init(ctx context.Context, host string, port int, user, password, bucket, region string, objectLocking, useSSL bool) (*Storage, error) {
 	client, err := minio.New(fmt.Sprintf("%s:%d", host, port), &minio.Options{
 		Creds:  credentials.NewStaticV4(user, password, ""),
-		Secure: false,
+		Secure: useSSL,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrMinioConnect, err)
@@ -63,6 +63,11 @@ func Init(ctx context.Context, host string, port int, user, password, bucket, re
 	}
 
 	return stg, nil
+}
+
+func (s *Storage) Close() error {
+	s.client = nil
+	return nil
 }
 
 func (s *Storage) PutObject(ctx context.Context, objectName string, reader io.Reader, size int64, extraMeta map[string]string) (minio.UploadInfo, error) {
@@ -105,6 +110,7 @@ func (s *Storage) StatObject(ctx context.Context, name string) (minio.ObjectInfo
 	if err != nil {
 		return minio.ObjectInfo{}, fmt.Errorf("%w: %v", ErrStatObject, err)
 	}
+
 	return info, nil
 }
 
@@ -132,5 +138,6 @@ func (s *Storage) ListObjects(ctx context.Context, prefix string, recursive bool
 			LastModified: obj.LastModified,
 		})
 	}
+
 	return objects, nil
 }

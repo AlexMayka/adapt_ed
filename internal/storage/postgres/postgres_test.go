@@ -54,7 +54,7 @@ func newTestPool(t *testing.T) *PoolPsg {
 		pgInfo.Host, pgInfo.User, pgInfo.Password, pgInfo.Database, pgInfo.Port,
 		5, 1,
 		time.Minute, time.Minute, 30*time.Second,
-		10*time.Second, 5*time.Second,
+		10*time.Second, 5*time.Second, "disable",
 	)
 	if err != nil {
 		t.Fatalf("NewPool() unexpected error: %v", err)
@@ -90,7 +90,7 @@ func TestNewPool_WrongCredentials(t *testing.T) {
 		pgInfo.Host, "wrong_user", "wrong_password", pgInfo.Database, pgInfo.Port,
 		5, 1,
 		time.Minute, time.Minute, 30*time.Second,
-		10*time.Second, 5*time.Second,
+		10*time.Second, 5*time.Second, "disable",
 	)
 	if err == nil {
 		t.Fatal("NewPool() expected error for wrong credentials, got nil")

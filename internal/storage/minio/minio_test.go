@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	storage, err = Init(ctx,
 		minioInfo.Host, minioInfo.Port,
 		minioInfo.User, minioInfo.Password,
-		"test-bucket", "us-east-1", false,
+		"test-bucket", "us-east-1", false, false,
 	)
 	if err != nil {
 		log.Fatalf("Init() failed: %v", err)
@@ -54,7 +54,7 @@ func TestInit_CreatesBucket(t *testing.T) {
 	s, err := Init(ctx,
 		minioInfo.Host, minioInfo.Port,
 		minioInfo.User, minioInfo.Password,
-		"another-bucket", "us-east-1", false,
+		"another-bucket", "us-east-1", false, false,
 	)
 	if err != nil {
 		t.Fatalf("Init() for new bucket failed: %v", err)
@@ -64,7 +64,7 @@ func TestInit_CreatesBucket(t *testing.T) {
 	s2, err := Init(ctx,
 		minioInfo.Host, minioInfo.Port,
 		minioInfo.User, minioInfo.Password,
-		"another-bucket", "us-east-1", false,
+		"another-bucket", "us-east-1", false, false,
 	)
 	if err != nil {
 		t.Fatalf("Init() for existing bucket failed: %v", err)

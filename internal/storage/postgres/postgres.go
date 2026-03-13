@@ -20,9 +20,9 @@ type PoolPsg struct {
 }
 
 func NewPool(ctx context.Context, host, user, password, name string, port int, maxConns, minConns int32,
-	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration) (*PoolPsg, error) {
+	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration, sslMode string) (*PoolPsg, error) {
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", user, password, host, port, name)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", user, password, host, port, name, sslMode)
 	poolCnf, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrParseConfig, err)
@@ -48,4 +48,12 @@ func NewPool(ctx context.Context, host, user, password, name string, port int, m
 	}
 
 	return &PoolPsg{Pool: pool, QueryTimeout: queryTimeout}, nil
+}
+
+func (p *PoolPsg) Close() error {
+	if p.Pool != nil {
+		p.Pool.Close()
+	}
+
+	return nil
 }
