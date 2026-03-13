@@ -24,6 +24,12 @@ type MinioConnInfo struct {
 	Password string
 }
 
+type RedisConnInfo struct {
+	Host     string
+	Port     int
+	Password string
+}
+
 func StartPostgres(ctx context.Context) (testcontainers.Container, PgConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:17",
@@ -102,5 +108,39 @@ func StartMinio(ctx context.Context) (testcontainers.Container, MinioConnInfo, e
 		Port:     mappedPort.Int(),
 		User:     "minioadmin",
 		Password: "minioadmin",
+	}, nil
+}
+
+func StartRedis(ctx context.Context) (testcontainers.Container, RedisConnInfo, error) {
+	req := testcontainers.ContainerRequest{
+		Image:        "redis:7",
+		ExposedPorts: []string{"6379/tcp"},
+		Cmd:          []string{"redis-server", "--requirepass", "test"},
+		WaitingFor: wait.ForLog("Ready to accept connections").
+			WithStartupTimeout(30 * time.Second),
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, RedisConnInfo{}, fmt.Errorf("start redis container: %w", err)
+	}
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		return nil, RedisConnInfo{}, fmt.Errorf("get redis host: %w", err)
+	}
+
+	mappedPort, err := container.MappedPort(ctx, "6379")
+	if err != nil {
+		return nil, RedisConnInfo{}, fmt.Errorf("get redis port: %w", err)
+	}
+
+	return container, RedisConnInfo{
+		Host:     host,
+		Port:     mappedPort.Int(),
+		Password: "test",
 	}, nil
 }
