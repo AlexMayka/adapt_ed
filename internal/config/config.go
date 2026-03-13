@@ -35,6 +35,7 @@ type MinioConfig struct {
 	Password string
 	Bucket   string
 	ApiPort  int
+	UseSSL   bool
 
 	RegionName    string
 	ObjectLocking bool
@@ -48,6 +49,7 @@ type DBConfig struct {
 	User     string
 	Password string
 	Database string
+	SSLMode  string
 
 	MaxConns          int32
 	MinConns          int32
@@ -58,6 +60,15 @@ type DBConfig struct {
 	PingTimeout       time.Duration
 }
 
+// RedisConfig contains Redis connection settings.
+type RedisConfig struct {
+	Host     string
+	Port     int
+	Password string
+	DB       int
+	UseSSL   bool
+}
+
 // Config groups all runtime configuration sections.
 type Config struct {
 	Env   *EnvConfig
@@ -65,6 +76,7 @@ type Config struct {
 	Log   *LogConfig
 	DB    *DBConfig
 	Minio *MinioConfig
+	Redis *RedisConfig
 }
 
 // appendErr keeps the env key context while collecting multiple errors.
@@ -147,6 +159,9 @@ func loadEnv() (*Config, error) {
 	dbPingTimeout, err := utils.GetDurationEnvDefault("PG_PING_TIMEOUT", time.Second*5)
 	errs = appendErr(errs, "PG_PING_TIMEOUT", err)
 
+	dbSSLMode, err := utils.GetEnvDefault[string]("PG_SSL_MODE", "disable")
+	errs = appendErr(errs, "PG_SSL_MODE", err)
+
 	// настройки MinIO
 	mnUser, err := utils.GetEnvDefault[string]("MINIO_USER", "minio_root")
 	errs = appendErr(errs, "MINIO_USER", err)
@@ -171,6 +186,25 @@ func loadEnv() (*Config, error) {
 
 	mnForceCreate, err := utils.GetEnvDefault[bool]("MINIO_FORCE_CREATE", false)
 	errs = appendErr(errs, "MINIO_FORCE_CREATE", err)
+
+	mnUseSSL, err := utils.GetEnvDefault[bool]("MINIO_USE_SSL", false)
+	errs = appendErr(errs, "MINIO_USE_SSL", err)
+
+	// настройки Redis
+	rdHost, err := utils.GetEnvDefault[string]("REDIS_HOST", "localhost")
+	errs = appendErr(errs, "REDIS_HOST", err)
+
+	rdPort, err := utils.GetEnvDefault[int]("REDIS_PORT", 6379)
+	errs = appendErr(errs, "REDIS_PORT", err)
+
+	rdPassword, err := utils.GetEnv[string]("REDIS_PASSWORD")
+	errs = appendErr(errs, "REDIS_PASSWORD", err)
+
+	rdDB, err := utils.GetEnvDefault[int]("REDIS_DB", 0)
+	errs = appendErr(errs, "REDIS_DB", err)
+
+	rdUseSSL, err := utils.GetEnvDefault[bool]("REDIS_USE_SSL", false)
+	errs = appendErr(errs, "REDIS_USE_SSL", err)
 
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("config initialization failed: %w", errors.Join(errs...))
@@ -198,6 +232,7 @@ func loadEnv() (*Config, error) {
 			User:     dbUser,
 			Database: dbName,
 			Port:     dbPort,
+			SSLMode:  dbSSLMode,
 
 			MaxConns:          dbMaxConns,
 			MinConns:          dbMinConns,
@@ -213,10 +248,18 @@ func loadEnv() (*Config, error) {
 			Password: mnPassword,
 			Bucket:   mnBucket,
 			ApiPort:  mnPortAPI,
+			UseSSL:   mnUseSSL,
 
 			RegionName:    mnRegion,
 			ObjectLocking: mnObjectLocking,
 			ForceCreate:   mnForceCreate,
+		},
+		Redis: &RedisConfig{
+			Host:     rdHost,
+			Port:     rdPort,
+			Password: rdPassword,
+			DB:       rdDB,
+			UseSSL:   rdUseSSL,
 		},
 	}, nil
 }

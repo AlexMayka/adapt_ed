@@ -17,6 +17,7 @@ func (c *Config) Validate() error {
 	errs = appendErr(errs, "app", validateApp(c.App))
 	errs = appendErr(errs, "db", validateDB(c.DB))
 	errs = appendErr(errs, "minio", validateMinio(c.Minio))
+	errs = appendErr(errs, "redis", validateRedis(c.Redis))
 	errs = appendErr(errs, "log", validateLog(c.Log))
 	errs = appendErr(errs, "env", validateEnv(c.Env))
 
@@ -92,6 +93,7 @@ func validateDB(db *DBConfig) error {
 	errs = appendErr(errs, "PG_PASSWORD", utils.ValidateEmptinessParam("PG_PASSWORD", db.Password))
 	errs = appendErr(errs, "PG_DB", utils.ValidateEmptinessParam("PG_DB", db.Database))
 	errs = appendErr(errs, "PG_MAX_CONNS", utils.ValidateParamMore("PG_MAX_CONNS", db.MaxConns, 0))
+	errs = appendErr(errs, "PG_SSL_MODE", validateSSLMode(db.SSLMode))
 
 	if db.MinConns < 0 {
 		errs = append(errs, fmt.Errorf("PG_MIN_CONNS: must be >= 0"))
@@ -146,5 +148,41 @@ func validateMinio(minio *MinioConfig) error {
 		return errors.Join(errs...)
 	}
 
+	return nil
+}
+
+// validateRedis validates Redis connection settings.
+func validateRedis(redis *RedisConfig) error {
+	if redis == nil {
+		return fmt.Errorf("%w: redis is nil", utils.ErrValidationFailed)
+	}
+
+	var errs []error
+	errs = appendErr(errs, "REDIS_HOST", utils.ValidateEmptinessParam("REDIS_HOST", redis.Host))
+	errs = appendErr(errs, "REDIS_PORT", utils.ValidatePort(redis.Port))
+	errs = appendErr(errs, "REDIS_PASSWORD", utils.ValidateEmptinessParam("REDIS_PASSWORD", redis.Password))
+
+	if redis.DB < 0 {
+		errs = append(errs, fmt.Errorf("REDIS_DB: must be >= 0"))
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// validateSSLMode checks if the PG SSL mode is a valid value.
+func validateSSLMode(mode string) error {
+	valid := map[string]bool{
+		"disable":     true,
+		"require":     true,
+		"verify-ca":   true,
+		"verify-full": true,
+	}
+	if !valid[mode] {
+		return fmt.Errorf("invalid PG_SSL_MODE: %q (allowed: disable, require, verify-ca, verify-full)", mode)
+	}
 	return nil
 }

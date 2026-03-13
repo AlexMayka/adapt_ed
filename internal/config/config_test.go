@@ -47,6 +47,7 @@ var wantConfig = Config{
 		Host:     "localhost",
 		Port:     5433,
 		Database: "adapt_ed",
+		SSLMode:  "disable",
 
 		MaxConns:          20,
 		MinConns:          5,
@@ -55,6 +56,11 @@ var wantConfig = Config{
 		QueryTimeout:      time.Duration(time.Second * 60),
 		HealthCheckPeriod: time.Duration(time.Second * 30),
 		PingTimeout:       time.Duration(time.Second * 5),
+	},
+	Redis: &RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Password: "123",
 	},
 }
 

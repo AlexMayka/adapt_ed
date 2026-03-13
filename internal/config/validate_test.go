@@ -191,6 +191,51 @@ func TestValidate(t *testing.T) {
 			cfg:     nil,
 			wantErr: true,
 		},
+		{
+			name: "nil redis config",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Redis = nil
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "empty redis host",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Redis.Host = ""
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "invalid redis port",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Redis.Port = 0
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "redis db negative",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.Redis.DB = -1
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "invalid pg ssl mode",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.DB.SSLMode = "enable"
+				return cfg
+			}(),
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -222,11 +267,12 @@ func validConfig() *Config {
 			LogLevel:  "info",
 		},
 		DB: &DBConfig{
-			Host:         "localhost",
-			Port:         5433,
-			User:         "adapt_ed",
-			Password:     "123",
-			Database:     "adapt_ed",
+			Host:              "localhost",
+			Port:              5433,
+			User:              "adapt_ed",
+			Password:          "123",
+			Database:          "adapt_ed",
+			SSLMode:           "disable",
 			MaxConns:          20,
 			MinConns:          5,
 			ConnLifeTime:      60,
@@ -242,6 +288,11 @@ func validConfig() *Config {
 			Bucket:     "adapt_ed",
 			ApiPort:    9000,
 			RegionName: "us-east-1",
+		},
+		Redis: &RedisConfig{
+			Host:     "localhost",
+			Port:     6379,
+			Password: "123",
 		},
 	}
 }
