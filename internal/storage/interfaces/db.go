@@ -1,3 +1,12 @@
-package _interface
+package interfaces
 
-type Db
+// DbType identifies a database implementation.
+type DbType string
+
+// Postgres selects PostgreSQL as the DbStorage backend.
+const Postgres DbType = "postgres"
+
+// DbStorage defines operations for database connection pool management.
+type DbStorage interface {
+	Close() error
+}

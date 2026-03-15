@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"backend/internal/storage/interfaces"
 	"context"
 	"errors"
 	"fmt"
@@ -26,7 +27,7 @@ type PoolPsg struct {
 // NewPool creates a PostgreSQL connection pool, configures its limits and verifies
 // connectivity with a ping bounded by pingTimeout.
 func NewPool(ctx context.Context, host, user, password, name string, port int, maxConns, minConns int32,
-	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration, sslMode string) (*PoolPsg, error) {
+	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration, sslMode string) (interfaces.DbStorage, error) {
 
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", user, password, host, port, name, sslMode)
 	poolCnf, err := pgxpool.ParseConfig(dsn)
