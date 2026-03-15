@@ -1,7 +1,7 @@
 package slog
 
 import (
-	"backend/internal/logger/types"
+	"backend/internal/logger/interfaces"
 	"log/slog"
 	"os"
 	"time"
@@ -28,11 +28,11 @@ func getSlogLevel(level string) slog.Level {
 	return lv
 }
 
-func Init(appVersion, instance, envType, logLevel, appService string, isLogger bool) types.Logger {
+func Init(appVersion, instance, envType, logLevel, appService string, isLogger bool) interfaces.Logger {
 	slogLevel := getSlogLevel(logLevel)
 	opts := &slog.HandlerOptions{
 		Level:     slogLevel,
-		AddSource: true,
+		AddSource: false,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			switch a.Key {
 			case slog.TimeKey:
@@ -84,14 +84,14 @@ func (sl *SlogLogger) Error(msg string, args ...any) {
 	}
 }
 
-func (sl *SlogLogger) With(args ...any) types.Logger {
+func (sl *SlogLogger) With(args ...any) interfaces.Logger {
 	return &SlogLogger{
 		logger:   sl.logger.With(args...),
 		isLogger: sl.isLogger,
 	}
 }
 
-func (sl *SlogLogger) WithGroup(name string) types.Logger {
+func (sl *SlogLogger) WithGroup(name string) interfaces.Logger {
 	return &SlogLogger{
 		logger:   sl.logger.WithGroup(name),
 		isLogger: sl.isLogger,
