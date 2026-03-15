@@ -23,3 +23,20 @@ scrape_configs:
         target_label: stream
     pipeline_stages:
       - docker: {}
+      # Парсим JSON-логи приложения, извлекаем поля как лейблы
+      - match:
+          selector: '{container="adapt_ed_backend"}'
+          stages:
+            - json:
+                expressions:
+                  level: level
+                  msg: msg
+                  method: method
+                  path: path
+                  status: status
+                  requestId: requestId
+            - labels:
+                level:
+                method:
+                path:
+                status:

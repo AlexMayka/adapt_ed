@@ -1,0 +1,583 @@
+{
+  "uid": "adapt-ed-node-exporter",
+  "title": "Node Exporter",
+  "tags": ["adapt-ed", "node", "infra"],
+  "timezone": "browser",
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "job",
+        "type": "constant",
+        "query": "node_exporter",
+        "current": { "text": "node_exporter", "value": "node_exporter" },
+        "hide": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Overview",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "title": "CPU Usage",
+      "description": "Общая загрузка CPU (%)",
+      "type": "gauge",
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "(1 - avg(rate(node_cpu_seconds_total{job=\"$job\",mode=\"idle\"}[1m]))) * 100",
+          "legendFormat": "CPU"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "Memory Usage",
+      "description": "Использование RAM (%)",
+      "type": "gauge",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes{job=\"$job\"} / node_memory_MemTotal_bytes{job=\"$job\"})) * 100",
+          "legendFormat": "RAM"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 4,
+      "title": "Disk Usage",
+      "description": "Использование корневого диска (%)",
+      "type": "gauge",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{job=\"$job\",fstype=\"ext4\"} / node_filesystem_size_bytes{job=\"$job\",fstype=\"ext4\"})) * 100",
+          "legendFormat": "Disk"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 60 },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 5,
+      "title": "Load Average",
+      "description": "Load average (1 min)",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "node_load1{job=\"$job\"}",
+          "legendFormat": "1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 4 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Total RAM",
+      "description": "Объём RAM",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes{job=\"$job\"}",
+          "legendFormat": "Total"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Uptime",
+      "description": "Время работы хоста",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "time() - node_boot_time_seconds{job=\"$job\"}",
+          "legendFormat": "uptime"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 10,
+      "title": "CPU",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "title": "CPU Usage по ядрам",
+      "description": "Загрузка CPU в разбивке по ядрам",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "(1 - rate(node_cpu_seconds_total{job=\"$job\",mode=\"idle\"}[1m])) * 100",
+          "legendFormat": "cpu{{cpu}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "spanNulls": true
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 12,
+      "title": "CPU по режимам (stacked)",
+      "description": "Распределение CPU time: user, system, iowait, ...",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "avg without(cpu) (rate(node_cpu_seconds_total{job=\"$job\",mode!=\"idle\"}[1m])) * 100",
+          "legendFormat": "{{mode}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 60,
+            "stacking": { "mode": "normal" },
+            "spanNulls": true
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Memory",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "title": "RAM Usage",
+      "description": "Used / Cached / Buffers / Available",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes{job=\"$job\"} - node_memory_MemAvailable_bytes{job=\"$job\"}",
+          "legendFormat": "Used"
+        },
+        {
+          "expr": "node_memory_Cached_bytes{job=\"$job\"}",
+          "legendFormat": "Cached"
+        },
+        {
+          "expr": "node_memory_Buffers_bytes{job=\"$job\"}",
+          "legendFormat": "Buffers"
+        },
+        {
+          "expr": "node_memory_MemAvailable_bytes{job=\"$job\"}",
+          "legendFormat": "Available"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 30,
+            "stacking": { "mode": "none" },
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Used" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Cached" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Buffers" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Available" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 22,
+      "title": "Load Average",
+      "description": "Load average 1m / 5m / 15m",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "node_load1{job=\"$job\"}",
+          "legendFormat": "1m"
+        },
+        {
+          "expr": "node_load5{job=\"$job\"}",
+          "legendFormat": "5m"
+        },
+        {
+          "expr": "node_load15{job=\"$job\"}",
+          "legendFormat": "15m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "1m" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "5m" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "yellow", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "15m" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 30,
+      "title": "Disk & Network",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+      "collapsed": false
+    },
+    {
+      "id": 31,
+      "title": "Disk I/O",
+      "description": "Скорость чтения/записи диска",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "sum(rate(node_disk_read_bytes_total{job=\"$job\"}[1m]))",
+          "legendFormat": "Read"
+        },
+        {
+          "expr": "sum(rate(node_disk_written_bytes_total{job=\"$job\"}[1m]))",
+          "legendFormat": "Write"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Read" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Write" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 32,
+      "title": "Network I/O",
+      "description": "Сетевой трафик: receive / transmit",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "sum(rate(node_network_receive_bytes_total{job=\"$job\",device!~\"lo|veth.*|docker.*|br-.*\"}[1m]))",
+          "legendFormat": "Receive"
+        },
+        {
+          "expr": "sum(rate(node_network_transmit_bytes_total{job=\"$job\",device!~\"lo|veth.*|docker.*|br-.*\"}[1m]))",
+          "legendFormat": "Transmit"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Receive" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Transmit" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "purple", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 33,
+      "title": "Filesystem Usage",
+      "description": "Использование дискового пространства по точкам монтирования",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 33 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{job=\"$job\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"$job\",fstype!~\"tmpfs|overlay\"})) * 100",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true, "job": true, "instance": true, "device": true },
+            "renameByName": { "mountpoint": "Mountpoint", "fstype": "FS Type", "Value": "Used %" }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": { "fields": {}, "sort": [{ "field": "Used %", "desc": true }] }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Mountpoint" },
+            "properties": [{ "id": "unit", "value": "string" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "FS Type" },
+            "properties": [{ "id": "unit", "value": "string" }, { "id": "custom.width", "value": 100 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Used %" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 1 },
+              { "id": "custom.width", "value": 150 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 60 },
+                    { "color": "orange", "value": 80 },
+                    { "color": "red", "value": 90 }
+                  ]
+                }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}
