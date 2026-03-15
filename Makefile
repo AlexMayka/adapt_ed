@@ -7,6 +7,9 @@ LOAD_ENV=@set -a; \
 
 run:
 	echo "Запуск программы"
+
+	swag init -g cmd/main.go
+
 	$(LOAD_ENV) \
 	go run ./cmd/main.go
 

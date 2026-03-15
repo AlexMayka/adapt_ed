@@ -6,6 +6,12 @@ import (
 )
 
 // Metrics returns a handler that serves Prometheus metrics.
+// @Summary Метрики приложения
+// @Description Возвращает метрики приложения в формате Prometheus для внешнего сбора и мониторинга.
+// @Tags infra
+// @Produce text/plain
+// @Success 200 {string} string
+// @Router /infra/metrics [get]
 func Metrics() gin.HandlerFunc {
 	h := promhttp.Handler()
 	return func(c *gin.Context) {

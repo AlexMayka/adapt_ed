@@ -1,0 +1,80 @@
+basePath: /
+definitions:
+  handlers.ErrorResponse:
+    properties:
+      reason:
+        example: 'db: connection refused'
+        type: string
+      status:
+        example: unavailable
+        type: string
+    type: object
+  handlers.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  handlers.ReadyResponse:
+    properties:
+      status:
+        example: ready
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API description
+  title: API
+  version: "1.0"
+paths:
+  /infra/health:
+    get:
+      description: Возвращает успешный ответ, если HTTP-сервис запущен и способен
+        обрабатывать запросы.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Проверка доступности сервиса
+      tags:
+      - infra
+  /infra/metrics:
+    get:
+      description: Возвращает метрики приложения в формате Prometheus для внешнего
+        сбора и мониторинга.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Метрики приложения
+      tags:
+      - infra
+  /infra/ready:
+    get:
+      description: Проверяет готовность приложения к обработке трафика и доступность
+        критичных зависимостей, таких как база данных и кэш.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.ReadyResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Проверка готовности сервиса
+      tags:
+      - infra
+swagger: "2.0"
+tags:
+- description: 'Служебные эндпоинты приложения: доступность, готовность и метрики
+    мониторинга.'
+  name: infra

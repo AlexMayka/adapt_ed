@@ -20,6 +20,7 @@ func StructuredLogging(log logInf.Logger) gin.HandlerFunc {
 
 		log.Info("http request",
 			"method", c.Request.Method,
+			"requestId", c.Request.Header.Get("X-Request-Id"),
 			"path", c.FullPath(),
 			"status", status,
 			"latency", latency.String(),

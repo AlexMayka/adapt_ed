@@ -15,6 +15,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	docs "backend/docs"
 )
 
 var (
@@ -54,7 +56,25 @@ func gracefulShutdown(srv *http.Server, db stgInf.DbStorage, cache stgInf.CacheS
 	return errs
 }
 
+func setSwagger(appName, host, version, envType, instance string) {
+	docs.SwaggerInfo.Title = appName
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Schemes = []string{"http"}
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Host = host
+
+	docs.SwaggerInfo.Description = fmt.Sprintf("Бэкенд API приложения для сервиса Adapt Education.\n"+
+		" Env: %s, Instance: %s", envType, instance)
+}
+
 // main loads runtime configuration and starts the HTTP server.
+// @title API
+// @version 1.0
+// @description API description
+// @BasePath /
+
+// @tag.name infra
+// @tag.description Служебные эндпоинты приложения: доступность, готовность и метрики мониторинга.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {
@@ -148,15 +168,10 @@ func main() {
 
 	log.Info("S3 подключена: ✅", "s3", fmt.Sprintf("%+v", s3))
 
-	// HTTP server
-	router := routers.NewRouter(routers.Deps{
-		Logger: log,
-		DB:     psg,
-		Cache:  cache,
-		S3:     s3,
-	}, cnf.Env.Type)
-
 	addr := fmt.Sprintf("%s:%d", cnf.App.Host, cnf.App.Port)
+	setSwagger(cnf.App.Service, addr, cnf.Env.Version, cnf.Env.Type, cnf.Env.Instance)
+
+	router := routers.NewRouter(routers.Deps{Logger: log, DB: psg, Cache: cache, S3: s3}, cnf.Env.Type)
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      router,

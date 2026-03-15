@@ -1,0 +1,117 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API description",
+        "title": "API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/infra/health": {
+            "get": {
+                "description": "Возвращает успешный ответ, если HTTP-сервис запущен и способен обрабатывать запросы.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "infra"
+                ],
+                "summary": "Проверка доступности сервиса",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/infra/metrics": {
+            "get": {
+                "description": "Возвращает метрики приложения в формате Prometheus для внешнего сбора и мониторинга.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "infra"
+                ],
+                "summary": "Метрики приложения",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/infra/ready": {
+            "get": {
+                "description": "Проверяет готовность приложения к обработке трафика и доступность критичных зависимостей, таких как база данных и кэш.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "infra"
+                ],
+                "summary": "Проверка готовности сервиса",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ReadyResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "example": "db: connection refused"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "unavailable"
+                }
+            }
+        },
+        "handlers.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "handlers.ReadyResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ready"
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "description": "Служебные эндпоинты приложения: доступность, готовность и метрики мониторинга.",
+            "name": "infra"
+        }
+    ]
+}
