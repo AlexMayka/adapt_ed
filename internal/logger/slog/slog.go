@@ -2,6 +2,7 @@ package slog
 
 import (
 	"backend/internal/logger/interfaces"
+	"backend/internal/utils"
 	"log/slog"
 	"os"
 	"time"
@@ -52,6 +53,7 @@ func Init(appVersion, instance, envType, logLevel, appService string, isLogger b
 
 	base := slog.New(h).With(
 		"service", appService,
+		"uuid_work", utils.GetUniqUUID(),
 		"env", envType,
 		"version", appVersion,
 		"instance", instance,

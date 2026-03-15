@@ -9,12 +9,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var (
 	ErrInitConfig = errors.New("init config error")
 	ErrInitLogger = errors.New("init logger error")
+
+	ErrCloseDB    = errors.New("close db error")
+	ErrCloseCache = errors.New("close redis error")
+	ErrCloseS3    = errors.New("close s3 error")
 )
+
+func gracefulShutdown(db stgInf.DbStorage, cache stgInf.CacheStorage, s3 stgInf.S3Storage) []error {
+	var errs []error
+
+	err := s3.Close()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseS3, err))
+	}
+
+	err = cache.Close()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseCache, err))
+	}
+
+	err = db.Close()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseDB, err))
+	}
+
+	return errs
+}
 
 // main loads runtime configuration and prints it for local sanity-check runs.
 func main() {
@@ -45,8 +73,6 @@ func main() {
 	log.Info("Конфиг инициализировался: ✅", "cnf", fmt.Sprintf("%+v\n", cnf))
 	log.Info("Логгер инициализировался: ✅", "log", fmt.Sprintf("%+v", log))
 
-	fmt.Printf("%+v", cnf)
-
 	ctx := context.Background()
 
 	psg, err := storage.InitDb(
@@ -69,7 +95,7 @@ func main() {
 
 	if err != nil {
 		log.Error("БД не подключена: ❌. Остановка приложения", "app", cnf.App.Service, "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	log.Info("Бд подключена: ✅", "db", fmt.Sprintf("%+v", psg))
@@ -87,7 +113,7 @@ func main() {
 
 	if err != nil {
 		log.Error("Кэш не подключен: ❌. Остановка приложения", "app", cnf.App.Service, "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	log.Info("Кэш подключен: ✅", "cache", fmt.Sprintf("%+v", cache))
@@ -107,8 +133,22 @@ func main() {
 
 	if err != nil {
 		log.Error("S3 не подключена: ❌", "app", cnf.App.Service, "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	log.Info("S3 подключена: ✅", "s3", fmt.Sprintf("%+v", s3))
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+
+	log.Info("Остановка сервера")
+	errs := gracefulShutdown(psg, cache, s3)
+
+	if len(errs) > 0 {
+		log.Error("Ошибки при завершении работы ❌", "app", cnf.App.Service, "err", errs)
+		os.Exit(1)
+	}
+
+	log.Info("Успешное завершение приложения ✅")
 }
