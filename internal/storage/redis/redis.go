@@ -21,7 +21,7 @@ type Connect struct {
 
 // Init creates a Redis client, verifies the connection with Ping and returns a ready Connect.
 // timeout is used for dial, read and write deadlines.
-func Init(ctx context.Context, host string, port, db int, password string, useSSL bool, maxRetries int, timeout time.Duration) (interfaces.Cache, error) {
+func Init(ctx context.Context, host string, port, db int, password string, useSSL bool, maxRetries int, timeout time.Duration) (interfaces.CacheStorage, error) {
 	opts := &redis.Options{
 		Addr:         fmt.Sprintf("%s:%d", host, port),
 		Password:     password,
