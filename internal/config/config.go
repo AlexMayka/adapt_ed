@@ -60,6 +60,13 @@ type DBConfig struct {
 	PingTimeout       time.Duration
 }
 
+// HTTPConfig contains HTTP server timeout settings.
+type HTTPConfig struct {
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	IdleTimeout  time.Duration
+}
+
 // RedisConfig contains Redis connection settings.
 type RedisConfig struct {
 	Host       string
@@ -76,6 +83,7 @@ type Config struct {
 	Env   *EnvConfig
 	App   *AppConfig
 	Log   *LogConfig
+	HTTP  *HTTPConfig
 	DB    *DBConfig
 	Minio *MinioConfig
 	Redis *RedisConfig
@@ -123,6 +131,16 @@ func loadEnv() (*Config, error) {
 
 	appLogLevel, err := utils.GetEnvDefault[string]("APP_LOG_LEVEL", "info")
 	errs = appendErr(errs, "APP_LOG_LEVEL", err)
+
+	// настройки HTTP сервера
+	httpReadTimeout, err := utils.GetDurationEnvDefault("APP_HTTP_READ_TIMEOUT", 10*time.Second)
+	errs = appendErr(errs, "APP_HTTP_READ_TIMEOUT", err)
+
+	httpWriteTimeout, err := utils.GetDurationEnvDefault("APP_HTTP_WRITE_TIMEOUT", 10*time.Second)
+	errs = appendErr(errs, "APP_HTTP_WRITE_TIMEOUT", err)
+
+	httpIdleTimeout, err := utils.GetDurationEnvDefault("APP_HTTP_IDLE_TIMEOUT", 120*time.Second)
+	errs = appendErr(errs, "APP_HTTP_IDLE_TIMEOUT", err)
 
 	// настройки БД
 	dbUser, err := utils.GetEnvDefault[string]("PG_USER", "postgres_root")
@@ -233,6 +251,11 @@ func loadEnv() (*Config, error) {
 		Log: &LogConfig{
 			IsLogging: appIsLogging,
 			LogLevel:  appLogLevel,
+		},
+		HTTP: &HTTPConfig{
+			ReadTimeout:  httpReadTimeout,
+			WriteTimeout: httpWriteTimeout,
+			IdleTimeout:  httpIdleTimeout,
 		},
 		DB: &DBConfig{
 			Host:     dbHost,

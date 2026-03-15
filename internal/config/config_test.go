@@ -33,6 +33,11 @@ var wantConfig = Config{
 		IsLogging: true,
 		LogLevel:  "info",
 	},
+	HTTP: &HTTPConfig{
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	},
 	Minio: &MinioConfig{
 		User:       "adapt_ed",
 		Password:   "123",

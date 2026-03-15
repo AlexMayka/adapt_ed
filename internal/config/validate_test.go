@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 // TestValidate verifies semantic validation rules for different config shapes.
 func TestValidate(t *testing.T) {
@@ -228,6 +231,42 @@ func TestValidate(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "nil http config",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.HTTP = nil
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "http read timeout is zero",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.HTTP.ReadTimeout = 0
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "http write timeout is negative",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.HTTP.WriteTimeout = -1
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
+			name: "http idle timeout is zero",
+			cfg: func() *Config {
+				cfg := validConfig()
+				cfg.HTTP.IdleTimeout = 0
+				return cfg
+			}(),
+			wantErr: true,
+		},
+		{
 			name: "invalid pg ssl mode",
 			cfg: func() *Config {
 				cfg := validConfig()
@@ -265,6 +304,11 @@ func validConfig() *Config {
 		Log: &LogConfig{
 			IsLogging: true,
 			LogLevel:  "info",
+		},
+		HTTP: &HTTPConfig{
+			ReadTimeout:  10 * time.Second,
+			WriteTimeout: 10 * time.Second,
+			IdleTimeout:  120 * time.Second,
 		},
 		DB: &DBConfig{
 			Host:              "localhost",

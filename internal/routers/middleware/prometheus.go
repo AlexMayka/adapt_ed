@@ -1,0 +1,53 @@
+package middleware
+
+import (
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+// Prometheus returns middleware that records request count and duration
+// using the supplied Prometheus counter and histogram.
+// Labels: method, path (route pattern), status.
+func Prometheus(counter *prometheus.CounterVec, duration *prometheus.HistogramVec) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+
+		c.Next()
+
+		status := strconv.Itoa(c.Writer.Status())
+		path := c.FullPath()
+		if path == "" {
+			path = "unknown"
+		}
+		method := c.Request.Method
+
+		counter.WithLabelValues(method, path, status).Inc()
+		duration.WithLabelValues(method, path, status).Observe(time.Since(start).Seconds())
+	}
+}
+
+// NewHTTPRequestsTotal creates a Prometheus counter for total HTTP requests.
+func NewHTTPRequestsTotal() *prometheus.CounterVec {
+	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Total number of HTTP requests.",
+	}, []string{"method", "path", "status"})
+
+	prometheus.MustRegister(counter)
+	return counter
+}
+
+// NewHTTPRequestDuration creates a Prometheus histogram for HTTP request duration.
+func NewHTTPRequestDuration() *prometheus.HistogramVec {
+	duration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "http_request_duration_seconds",
+		Help:    "Duration of HTTP requests in seconds.",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"method", "path", "status"})
+
+	prometheus.MustRegister(duration)
+	return duration
+}

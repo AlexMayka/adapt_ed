@@ -4,47 +4,57 @@ import (
 	"backend/internal/config"
 	"backend/internal/logger"
 	logInf "backend/internal/logger/interfaces"
+	"backend/internal/routers"
 	"backend/internal/storage"
 	stgInf "backend/internal/storage/interfaces"
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 var (
 	ErrInitConfig = errors.New("init config error")
 	ErrInitLogger = errors.New("init logger error")
 
-	ErrCloseDB    = errors.New("close db error")
-	ErrCloseCache = errors.New("close redis error")
-	ErrCloseS3    = errors.New("close s3 error")
+	ErrCloseDB      = errors.New("close db error")
+	ErrCloseCache   = errors.New("close redis error")
+	ErrCloseS3      = errors.New("close s3 error")
+	ErrShutdownHTTP = errors.New("shutdown http server error")
 )
 
-func gracefulShutdown(db stgInf.DbStorage, cache stgInf.CacheStorage, s3 stgInf.S3Storage) []error {
+// gracefulShutdown drains in-flight HTTP requests, then closes storage connections
+// in reverse initialization order: S3 → Cache → DB.
+func gracefulShutdown(srv *http.Server, db stgInf.DbStorage, cache stgInf.CacheStorage, s3 stgInf.S3Storage) []error {
 	var errs []error
 
-	err := s3.Close()
-	if err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		errs = append(errs, fmt.Errorf("%w: %w", ErrShutdownHTTP, err))
+	}
+
+	if err := s3.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseS3, err))
 	}
 
-	err = cache.Close()
-	if err != nil {
+	if err := cache.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseCache, err))
 	}
 
-	err = db.Close()
-	if err != nil {
+	if err := db.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseDB, err))
 	}
 
 	return errs
 }
 
-// main loads runtime configuration and prints it for local sanity-check runs.
+// main loads runtime configuration and starts the HTTP server.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {
@@ -138,12 +148,37 @@ func main() {
 
 	log.Info("S3 подключена: ✅", "s3", fmt.Sprintf("%+v", s3))
 
+	// HTTP server
+	router := routers.NewRouter(routers.Deps{
+		Logger: log,
+		DB:     psg,
+		Cache:  cache,
+		S3:     s3,
+	}, cnf.Env.Type)
+
+	addr := fmt.Sprintf("%s:%d", cnf.App.Host, cnf.App.Port)
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      router,
+		ReadTimeout:  cnf.HTTP.ReadTimeout,
+		WriteTimeout: cnf.HTTP.WriteTimeout,
+		IdleTimeout:  cnf.HTTP.IdleTimeout,
+	}
+
+	go func() {
+		log.Info("HTTP сервер запущен", "addr", addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("HTTP сервер остановлен с ошибкой: ❌", "err", err)
+			os.Exit(1)
+		}
+	}()
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
 	log.Info("Остановка сервера")
-	errs := gracefulShutdown(psg, cache, s3)
+	errs := gracefulShutdown(srv, psg, cache, s3)
 
 	if len(errs) > 0 {
 		log.Error("Ошибки при завершении работы ❌", "app", cnf.App.Service, "err", errs)

@@ -1,5 +1,7 @@
 package interfaces
 
+import "context"
+
 // DbType identifies a database implementation.
 type DbType string
 
@@ -9,4 +11,5 @@ const Postgres DbType = "postgres"
 // DbStorage defines operations for database connection pool management.
 type DbStorage interface {
 	Close() error
+	Ping(ctx context.Context) error
 }

@@ -57,6 +57,11 @@ func NewPool(ctx context.Context, host, user, password, name string, port int, m
 	return &PoolPsg{Pool: pool, QueryTimeout: queryTimeout}, nil
 }
 
+// Ping verifies that the database is reachable.
+func (p *PoolPsg) Ping(ctx context.Context) error {
+	return p.Pool.Ping(ctx)
+}
+
 // Close releases all connections in the pool.
 func (p *PoolPsg) Close() error {
 	if p.Pool != nil {

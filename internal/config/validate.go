@@ -15,6 +15,7 @@ func (c *Config) Validate() error {
 	var errs []error
 
 	errs = appendErr(errs, "app", validateApp(c.App))
+	errs = appendErr(errs, "http", validateHTTP(c.HTTP))
 	errs = appendErr(errs, "db", validateDB(c.DB))
 	errs = appendErr(errs, "minio", validateMinio(c.Minio))
 	errs = appendErr(errs, "redis", validateRedis(c.Redis))
@@ -39,6 +40,33 @@ func validateApp(app *AppConfig) error {
 	errs = appendErr(errs, "APP_HOST", utils.ValidateEmptinessParam("APP_HOST", app.Host))
 	errs = appendErr(errs, "APP_PORT", utils.ValidatePort(app.Port))
 	errs = appendErr(errs, "APP_SECRET", utils.ValidateEmptinessParam("APP_SECRET", app.Secret))
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
+}
+
+// validateHTTP validates HTTP server timeout settings.
+func validateHTTP(http *HTTPConfig) error {
+	if http == nil {
+		return fmt.Errorf("%w: http is nil", utils.ErrValidationFailed)
+	}
+
+	var errs []error
+
+	if http.ReadTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("APP_HTTP_READ_TIMEOUT: must be > 0"))
+	}
+
+	if http.WriteTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("APP_HTTP_WRITE_TIMEOUT: must be > 0"))
+	}
+
+	if http.IdleTimeout <= 0 {
+		errs = append(errs, fmt.Errorf("APP_HTTP_IDLE_TIMEOUT: must be > 0"))
+	}
 
 	if len(errs) > 0 {
 		return errors.Join(errs...)
