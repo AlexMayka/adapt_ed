@@ -6,13 +6,12 @@ import (
 	"io"
 )
 
-// S3Type identifies an S3-compatible object storage implementation.
+// S3Type определяет тип реализации S3-хранилища.
 type S3Type string
 
-// Minio selects MinIO as the S3Storage backend.
 const Minio S3Type = "minio"
 
-// S3Storage defines operations for S3-compatible object storage.
+// S3Storage описывает операции S3-совместимого объектного хранилища.
 type S3Storage interface {
 	PutObject(ctx context.Context, objectName string, reader io.Reader, size int64, extraMeta map[string]string) (*typesSg.UploadInfo, error)
 	GetObject(ctx context.Context, name string) (io.ReadCloser, error)

@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	appErr "backend/internal/errors"
 	"backend/internal/storage/testhelper"
 	"context"
 	"database/sql"
@@ -95,8 +96,8 @@ func TestNewPool_WrongCredentials(t *testing.T) {
 	if err == nil {
 		t.Fatal("NewPool() expected error for wrong credentials, got nil")
 	}
-	if !errors.Is(err, ErrPing) && !errors.Is(err, ErrCreatePool) {
-		t.Fatalf("expected ErrPing or ErrCreatePool, got: %v", err)
+	if !errors.Is(err, appErr.ErrPgPing) && !errors.Is(err, appErr.ErrPgCreatePool) {
+		t.Fatalf("expected ErrPgPing or ErrPgCreatePool, got: %v", err)
 	}
 }
 

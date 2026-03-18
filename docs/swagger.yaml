@@ -1,14 +1,338 @@
 basePath: /
 definitions:
-  handlers.ErrorResponse:
+  auth.GetMeResponse:
     properties:
-      reason:
-        example: 'db: connection refused'
+      avatar_key:
+        example: avatars/10cb44c1/photo.png
         type: string
-      status:
-        example: unavailable
+      class_id:
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      created_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      email:
+        example: example@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      id:
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/dto.UserRole'
+        enum:
+        - student
+        - teacher
+        - school_admin
+        - super_admin
+        example: student
+      school_id:
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+      updated_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - role
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        example: example@example.com
+        type: string
+      password:
+        example: NFMpC9!fm;ARqoh
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      class_id:
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      created_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      email:
+        example: example@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      id:
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
+      refresh_token:
+        example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/dto.UserRole'
+        enum:
+        - student
+        - teacher
+        - school_admin
+        - super_admin
+        example: student
+      school_id:
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+      updated_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - role
+    type: object
+  auth.LogoutRequest:
+    properties:
+      refresh_token:
+        example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.LogoutResponse:
+    properties:
+      id:
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
     type: object
+  auth.RefreshRequest:
+    properties:
+      refresh_token:
+        example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.RefreshResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      refresh_token:
+        example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
+        type: string
+    type: object
+  auth.RegistrationRequest:
+    properties:
+      email:
+        example: example@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
+      password:
+        example: NFMpC9!fm;ARqoh
+        minLength: 8
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  auth.RegistrationRequestByAdmin:
+    properties:
+      class_id:
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      email:
+        example: example@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/dto.UserRole'
+        enum:
+        - student
+        - teacher
+        - school_admin
+        - super_admin
+        example: student
+      school_id:
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - role
+    type: object
+  auth.RegistrationResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      class_id:
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      created_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      email:
+        example: example@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      id:
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
+      refresh_token:
+        example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/dto.UserRole'
+        enum:
+        - student
+        - teacher
+        - school_admin
+        - super_admin
+        example: student
+      school_id:
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+      updated_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - role
+    type: object
+  auth.RegistrationResponseByAdmin:
+    properties:
+      class_id:
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      created_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      email:
+        example: example@example.com
+        type: string
+      first_name:
+        example: Иван
+        type: string
+      id:
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      last_name:
+        example: Иванов
+        type: string
+      middle_name:
+        example: Иванович
+        type: string
+      password:
+        example: NFMpC9!fm;ARqoh
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/dto.UserRole'
+        enum:
+        - student
+        - teacher
+        - school_admin
+        - super_admin
+        example: student
+      school_id:
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+      updated_at:
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - role
+    type: object
+  dto.ErrorResponse:
+    properties:
+      code:
+        example: VALIDATION_ERROR
+        type: string
+      message:
+        example: Некорректный формат email
+        type: string
+      request_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  dto.UserRole:
+    enum:
+    - student
+    - teacher
+    - school_admin
+    - super_admin
+    type: string
+    x-enum-varnames:
+    - RoleStudent
+    - RoleTeacher
+    - RoleSchoolAdmin
+    - RoleSuperAdmin
   handlers.HealthResponse:
     properties:
       status:
@@ -27,6 +351,198 @@ info:
   title: API
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход по email и паролю, возвращает пару токенов.
+      parameters:
+      - description: Учётные данные
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Неверный email или пароль
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Аутентификация
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Инвалидирует переданный refresh token.
+      parameters:
+      - description: Refresh token текущей сессии
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LogoutResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Выход из текущей сессии
+      tags:
+      - auth
+  /auth/logout-all:
+    post:
+      consumes:
+      - application/json
+      description: Инвалидирует все refresh token текущего пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LogoutResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Выход со всех устройств
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Возвращает данные авторизованного пользователя по JWT.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.GetMeResponse'
+        "401":
+          description: Не авторизован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Текущий пользователь
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Принимает refresh token и возвращает новую пару access + refresh.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.RefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Невалидный или истёкший refresh token
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Обновление токенов
+      tags:
+      - auth
+  /auth/registration:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт нового пользователя с ролью student и возвращает пару токенов.
+      parameters:
+      - description: Данные регистрации
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegistrationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.RegistrationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Email уже зарегистрирован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Самостоятельная регистрация
+      tags:
+      - auth
+  /auth/registration/admin:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт пользователя с указанной ролью и генерирует временный пароль.
+      parameters:
+      - description: Данные нового пользователя
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegistrationRequestByAdmin'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.RegistrationResponseByAdmin'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Email уже зарегистрирован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Создание пользователя админом
+      tags:
+      - auth
   /infra/health:
     get:
       description: Возвращает успешный ответ, если HTTP-сервис запущен и способен
@@ -69,7 +585,7 @@ paths:
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Проверка готовности сервиса
       tags:
       - infra
@@ -78,3 +594,5 @@ tags:
 - description: 'Служебные эндпоинты приложения: доступность, готовность и метрики
     мониторинга.'
   name: infra
+- description: Экндпоинты для работы с авторизацией пользователей
+  name: auth

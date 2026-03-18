@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"backend/internal/dto"
+	"backend/internal/errors"
+	"backend/internal/storage/postgres"
 	stgInf "backend/internal/storage/interfaces"
 	"net/http"
 
@@ -15,12 +18,8 @@ type ReadyResponse struct {
 	Status string `json:"status" example:"ready"`
 }
 
-type ErrorResponse struct {
-	Status string `json:"status" example:"unavailable"`
-	Reason string `json:"reason" example:"db: connection refused"`
-}
 
-// Health returns a liveness probe handler.
+// Health возвращает обработчик liveness-пробы.
 // @Summary Проверка доступности сервиса
 // @Description Возвращает успешный ответ, если HTTP-сервис запущен и способен обрабатывать запросы.
 // @Tags infra
@@ -33,31 +32,25 @@ func Health() gin.HandlerFunc {
 	}
 }
 
-// Ready returns a readiness probe handler.
+// Ready возвращает обработчик readiness-пробы с проверкой БД и кэша.
 // @Summary Проверка готовности сервиса
 // @Description Проверяет готовность приложения к обработке трафика и доступность критичных зависимостей, таких как база данных и кэш.
 // @Tags infra
 // @Produce json
 // @Success 200 {object} ReadyResponse
-// @Failure 503 {object} ErrorResponse
+// @Failure 503 {object} dto.ErrorResponse
 // @Router /infra/ready [get]
-func Ready(db stgInf.DbStorage, cache stgInf.CacheStorage) gin.HandlerFunc {
+func Ready(db *postgres.PoolPsg, cache stgInf.CacheStorage) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
 		if err := db.Ping(ctx); err != nil {
-			c.JSON(http.StatusServiceUnavailable, ErrorResponse{
-				Status: "unavailable",
-				Reason: "db: " + err.Error(),
-			})
+			c.JSON(http.StatusServiceUnavailable, dto.NewErrorResponse(c, errors.ErrCodeServiceUnavailable, "db: "+err.Error()))
 			return
 		}
 
 		if err := cache.Ping(ctx); err != nil {
-			c.JSON(http.StatusServiceUnavailable, ErrorResponse{
-				Status: "unavailable",
-				Reason: "cache: " + err.Error(),
-			})
+			c.JSON(http.StatusServiceUnavailable, dto.NewErrorResponse(c, errors.ErrCodeServiceUnavailable, "cache: "+err.Error()))
 			return
 		}
 

@@ -1,10 +1,10 @@
 package minio
 
 import (
+	appErr "backend/internal/errors"
 	"backend/internal/storage/interfaces"
 	typesSg "backend/internal/storage/types"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -14,39 +14,27 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-var (
-	ErrMinioConnect   = errors.New("failed to connect to minio")
-	ErrBucketCheck    = errors.New("failed to check bucket existence")
-	ErrBucketCreate   = errors.New("failed to create bucket")
-	ErrSetRangeOffset = errors.New("failed to set range offset")
-	ErrGetObject      = errors.New("failed to get object from minio")
-	ErrStatObject     = errors.New("failed to get object info")
-	ErrRemoveObject   = errors.New("failed to remove object")
-	ErrListObjects    = errors.New("failed to list objects")
-	ErrPutObject      = errors.New("failed to put object")
-)
-
-// Storage wraps a MinIO client scoped to a single bucket.
+// Storage оборачивает MinIO-клиент, привязанный к одному бакету.
 type Storage struct {
 	client *minio.Client
 	bucket string
 }
 
-// Init creates a MinIO client, checks if the target bucket exists and creates it if needed.
+// Init создаёт MinIO-клиент, проверяет наличие бакета и создаёт его при необходимости.
 func Init(ctx context.Context, host string, port int, user, password, bucket, region string, objectLocking, useSSL bool) (interfaces.S3Storage, error) {
 	client, err := minio.New(fmt.Sprintf("%s:%d", host, port), &minio.Options{
 		Creds:  credentials.NewStaticV4(user, password, ""),
 		Secure: useSSL,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMinioConnect, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrMinioConnect, err)
 	}
 
 	stg := &Storage{client: client, bucket: bucket}
 
 	exists, err := client.BucketExists(ctx, bucket)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBucketCheck, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrBucketCheck, err)
 	}
 
 	if !exists {
@@ -55,21 +43,20 @@ func Init(ctx context.Context, host string, port int, user, password, bucket, re
 			ObjectLocking: objectLocking,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrBucketCreate, err)
+			return nil, fmt.Errorf("%w: %v", appErr.ErrBucketCreate, err)
 		}
 	}
 
 	return stg, nil
 }
 
-// Close releases the MinIO client reference.
+// Close освобождает ссылку на MinIO-клиент.
 func (s *Storage) Close() error {
 	s.client = nil
 	return nil
 }
 
-// PutObject uploads data from reader into the bucket under objectName.
-// Content-Type is auto-detected from the file extension; size must match the reader length.
+// PutObject загружает данные из reader в бакет. Content-Type определяется по расширению файла.
 func (s *Storage) PutObject(ctx context.Context, objectName string, reader io.Reader, size int64, extraMeta map[string]string) (*typesSg.UploadInfo, error) {
 	ct := mime.TypeByExtension(filepath.Ext(objectName))
 	if ct == "" {
@@ -83,7 +70,7 @@ func (s *Storage) PutObject(ctx context.Context, objectName string, reader io.Re
 
 	put, err := s.client.PutObject(ctx, s.bucket, objectName, reader, size, opts)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrPutObject, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrPutObject, err)
 	}
 
 	info := &typesSg.UploadInfo{
@@ -101,34 +88,34 @@ func (s *Storage) PutObject(ctx context.Context, objectName string, reader io.Re
 	return info, nil
 }
 
-// GetObject returns the full object content as an io.ReadCloser. Caller must close it.
+// GetObject возвращает полное содержимое объекта. Вызывающий обязан закрыть reader.
 func (s *Storage) GetObject(ctx context.Context, name string) (io.ReadCloser, error) {
 	reader, err := s.client.GetObject(ctx, s.bucket, name, minio.GetObjectOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrGetObject, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrGetObject, err)
 	}
 	return reader, nil
 }
 
-// GetObjectRange returns a byte range [start, end] of the object. Caller must close the reader.
+// GetObjectRange возвращает диапазон байт [start, end] объекта. Вызывающий обязан закрыть reader.
 func (s *Storage) GetObjectRange(ctx context.Context, name string, start, end int64) (io.ReadCloser, error) {
 	opts := minio.GetObjectOptions{}
 	if err := opts.SetRange(start, end); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrSetRangeOffset, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrSetRangeOffset, err)
 	}
 
 	reader, err := s.client.GetObject(ctx, s.bucket, name, opts)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrGetObject, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrGetObject, err)
 	}
 	return reader, nil
 }
 
-// StatObject returns metadata (size, content-type, etc.) for the named object.
+// StatObject возвращает метаданные объекта (размер, content-type и т.д.).
 func (s *Storage) StatObject(ctx context.Context, name string) (*typesSg.ObjectInfo, error) {
 	infoMn, err := s.client.StatObject(ctx, s.bucket, name, minio.StatObjectOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrStatObject, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrStatObject, err)
 	}
 
 	info := &typesSg.ObjectInfo{
@@ -141,17 +128,16 @@ func (s *Storage) StatObject(ctx context.Context, name string) (*typesSg.ObjectI
 	return info, nil
 }
 
-// RemoveObject deletes the named object from the bucket.
+// RemoveObject удаляет объект из бакета.
 func (s *Storage) RemoveObject(ctx context.Context, name string) error {
 	err := s.client.RemoveObject(ctx, s.bucket, name, minio.RemoveObjectOptions{})
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrRemoveObject, err)
+		return fmt.Errorf("%w: %v", appErr.ErrRemoveObject, err)
 	}
 	return nil
 }
 
-// ListObjects returns all objects matching the prefix. When recursive is false,
-// only the top-level entries under the prefix are returned.
+// ListObjects возвращает объекты по префиксу. При recursive=false — только верхний уровень.
 func (s *Storage) ListObjects(ctx context.Context, prefix string, recursive bool) ([]typesSg.ObjectInfo, error) {
 	var objects []typesSg.ObjectInfo
 	for obj := range s.client.ListObjects(ctx, s.bucket, minio.ListObjectsOptions{
@@ -159,7 +145,7 @@ func (s *Storage) ListObjects(ctx context.Context, prefix string, recursive bool
 		Recursive: recursive,
 	}) {
 		if obj.Err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrListObjects, obj.Err)
+			return nil, fmt.Errorf("%w: %v", appErr.ErrListObjects, obj.Err)
 		}
 		objects = append(objects, typesSg.ObjectInfo{
 			Name:         obj.Key,

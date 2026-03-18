@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-// EnvConfig contains settings for environment
+// EnvConfig содержит настройки окружения.
 type EnvConfig struct {
 	Version  string
 	Instance string
 	Type     string
 }
 
-// AppConfig contains application-level runtime settings.
+// AppConfig содержит настройки приложения.
 type AppConfig struct {
 	Service string
 	Host    string
@@ -22,13 +22,19 @@ type AppConfig struct {
 	Secret  string
 }
 
-// LogConfig contains settings for logging
+// AuthConfig содержит настройки JWT и refresh-токенов.
+type AuthConfig struct {
+	AccessTTL  time.Duration
+	RefreshTTL time.Duration
+}
+
+// LogConfig содержит настройки логирования.
 type LogConfig struct {
 	IsLogging bool
 	LogLevel  string
 }
 
-// MinioConfig contains settings for S3-compatible object storage.
+// MinioConfig содержит настройки S3-совместимого объектного хранилища.
 type MinioConfig struct {
 	Host     string
 	User     string
@@ -42,7 +48,7 @@ type MinioConfig struct {
 	ForceCreate   bool
 }
 
-// DBConfig contains PostgreSQL connection and pool settings.
+// DBConfig содержит настройки подключения и пула PostgreSQL.
 type DBConfig struct {
 	Host     string
 	Port     int
@@ -60,14 +66,14 @@ type DBConfig struct {
 	PingTimeout       time.Duration
 }
 
-// HTTPConfig contains HTTP server timeout settings.
+// HTTPConfig содержит настройки таймаутов HTTP-сервера.
 type HTTPConfig struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
 }
 
-// RedisConfig contains Redis connection settings.
+// RedisConfig содержит настройки подключения к Redis.
 type RedisConfig struct {
 	Host       string
 	Port       int
@@ -78,10 +84,11 @@ type RedisConfig struct {
 	Timeout    time.Duration
 }
 
-// Config groups all runtime configuration sections.
+// Config объединяет все секции конфигурации приложения.
 type Config struct {
 	Env   *EnvConfig
 	App   *AppConfig
+	Auth  *AuthConfig
 	Log   *LogConfig
 	HTTP  *HTTPConfig
 	DB    *DBConfig
@@ -89,7 +96,7 @@ type Config struct {
 	Redis *RedisConfig
 }
 
-// appendErr keeps the env key context while collecting multiple errors.
+// appendErr добавляет ошибку с контекстом ключа в список ошибок.
 func appendErr(errs []error, key string, err error) []error {
 	if err != nil {
 		return append(errs, fmt.Errorf("%s: %w", key, err))
@@ -97,7 +104,7 @@ func appendErr(errs []error, key string, err error) []error {
 	return errs
 }
 
-// loadEnv parses env vars into Config fields and applies default values.
+// loadEnv считывает переменные окружения в поля Config с применением значений по умолчанию.
 func loadEnv() (*Config, error) {
 	var errs []error
 	var err error
@@ -124,6 +131,13 @@ func loadEnv() (*Config, error) {
 
 	appSecret, err := utils.GetEnv[string]("APP_SECRET")
 	errs = appendErr(errs, "APP_SECRET", err)
+
+	// настройки авторизации
+	authAccessTTL, err := utils.GetDurationEnvDefault("AUTH_ACCESS_TTL", 15*time.Minute)
+	errs = appendErr(errs, "AUTH_ACCESS_TTL", err)
+
+	authRefreshTTL, err := utils.GetDurationEnvDefault("AUTH_REFRESH_TTL", 30*24*time.Hour)
+	errs = appendErr(errs, "AUTH_REFRESH_TTL", err)
 
 	// логирование
 	appIsLogging, err := utils.GetEnvDefault[bool]("APP_IS_LOGGING", true)
@@ -248,6 +262,10 @@ func loadEnv() (*Config, error) {
 			Port:    appPort,
 			Secret:  appSecret,
 		},
+		Auth: &AuthConfig{
+			AccessTTL:  authAccessTTL,
+			RefreshTTL: authRefreshTTL,
+		},
 		Log: &LogConfig{
 			IsLogging: appIsLogging,
 			LogLevel:  appLogLevel,
@@ -297,7 +315,7 @@ func loadEnv() (*Config, error) {
 	}, nil
 }
 
-// Load reads environment variables, applies defaults, and validates the result.
+// Load загружает конфигурацию из окружения и валидирует результат.
 func Load() (Config, error) {
 
 	cfg, err := loadEnv()

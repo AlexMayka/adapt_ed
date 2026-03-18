@@ -2,11 +2,13 @@ package main
 
 import (
 	"backend/internal/config"
+	appErr "backend/internal/errors"
 	"backend/internal/logger"
 	logInf "backend/internal/logger/interfaces"
 	"backend/internal/routers"
 	"backend/internal/storage"
 	stgInf "backend/internal/storage/interfaces"
+	"backend/internal/storage/postgres"
 	"context"
 	"errors"
 	"fmt"
@@ -19,38 +21,28 @@ import (
 	docs "backend/docs"
 )
 
-var (
-	ErrInitConfig = errors.New("init config error")
-	ErrInitLogger = errors.New("init logger error")
-
-	ErrCloseDB      = errors.New("close db error")
-	ErrCloseCache   = errors.New("close redis error")
-	ErrCloseS3      = errors.New("close s3 error")
-	ErrShutdownHTTP = errors.New("shutdown http server error")
-)
-
-// gracefulShutdown drains in-flight HTTP requests, then closes storage connections
-// in reverse initialization order: S3 → Cache → DB.
-func gracefulShutdown(srv *http.Server, db stgInf.DbStorage, cache stgInf.CacheStorage, s3 stgInf.S3Storage) []error {
+// gracefulShutdown завершает обработку текущих запросов и закрывает хранилища
+// в обратном порядке инициализации: S3 → Cache → DB.
+func gracefulShutdown(srv *http.Server, db *postgres.PoolPsg, cache stgInf.CacheStorage, s3 stgInf.S3Storage) []error {
 	var errs []error
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		errs = append(errs, fmt.Errorf("%w: %w", ErrShutdownHTTP, err))
+		errs = append(errs, fmt.Errorf("%w: %w", appErr.ErrShutdownHTTP, err))
 	}
 
 	if err := s3.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseS3, err))
+		errs = append(errs, fmt.Errorf("%w: %w", appErr.ErrCloseS3, err))
 	}
 
 	if err := cache.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseCache, err))
+		errs = append(errs, fmt.Errorf("%w: %w", appErr.ErrCloseCache, err))
 	}
 
 	if err := db.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("%w: %w", ErrCloseDB, err))
+		errs = append(errs, fmt.Errorf("%w: %w", appErr.ErrCloseDB, err))
 	}
 
 	return errs
@@ -67,7 +59,6 @@ func setSwagger(appName, host, version, envType, instance string) {
 		" Env: %s, Instance: %s", envType, instance)
 }
 
-// main loads runtime configuration and starts the HTTP server.
 // @title API
 // @version 1.0
 // @description API description
@@ -75,10 +66,12 @@ func setSwagger(appName, host, version, envType, instance string) {
 
 // @tag.name infra
 // @tag.description Служебные эндпоинты приложения: доступность, готовность и метрики мониторинга.
+// @tag.name auth
+// @tag.description Экндпоинты для работы с авторизацией пользователей
 func main() {
 	cnf, err := config.Load()
 	if err != nil {
-		panic(fmt.Errorf("%w: %s", ErrInitConfig, err))
+		panic(fmt.Errorf("%w: %s", appErr.ErrInitConfig, err))
 	}
 
 	log, err := logger.Init(
@@ -92,7 +85,7 @@ func main() {
 	)
 
 	if err != nil {
-		panic(fmt.Errorf("%w: %s", ErrInitLogger, err))
+		panic(fmt.Errorf("%w: %s", appErr.ErrInitLogger, err))
 	}
 
 	log.Info("Начало работы программы",
@@ -120,7 +113,6 @@ func main() {
 		cnf.DB.QueryTimeout,
 		cnf.DB.PingTimeout,
 		cnf.DB.SSLMode,
-		stgInf.Postgres,
 	)
 
 	if err != nil {
@@ -171,7 +163,13 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", cnf.App.Host, cnf.App.Port)
 	setSwagger(cnf.App.Service, addr, cnf.Env.Version, cnf.Env.Type, cnf.Env.Instance)
 
-	router := routers.NewRouter(routers.Deps{Logger: log, DB: psg, Cache: cache, S3: s3}, cnf.Env.Type)
+	router := routers.NewRouter(routers.Deps{
+		Logger: log,
+		Config: cnf,
+		DB:     psg,
+		Cache:  cache,
+		S3:     s3,
+	}, cnf.Env.Type)
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      router,

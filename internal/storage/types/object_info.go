@@ -2,7 +2,7 @@ package types
 
 import "time"
 
-// ObjectInfo contains metadata about a stored object without exposing MinIO SDK types.
+// ObjectInfo содержит метаданные объекта без привязки к типам MinIO SDK.
 type ObjectInfo struct {
 	Name         string
 	Size         int64

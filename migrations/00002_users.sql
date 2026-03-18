@@ -72,20 +72,21 @@ COMMENT ON COLUMN classes.deleted_at            IS 'Дата удаления з
 -- ---------- users ----------
 
 CREATE TABLE users (
-    id            uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    role          user_role   NOT NULL DEFAULT 'student',
-    class_id      uuid,
-    school_id     uuid,
-    email         text        NOT NULL,
-    password_hash text        NOT NULL,
-    last_name     text        NOT NULL,
-    first_name    text        NOT NULL,
-    middle_name   text,
-    avatar_key    text,
-    is_active     bool        NOT NULL DEFAULT true,
-    created_at    timestamptz NOT NULL DEFAULT now(),
-    updated_at    timestamptz NOT NULL DEFAULT now(),
-    deleted_at    timestamptz
+    id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    role            user_role   NOT NULL DEFAULT 'student',
+    class_id        uuid,
+    school_id       uuid,
+    email           text        NOT NULL,
+    password_hash   text        NOT NULL,
+    last_name       text        NOT NULL,
+    first_name      text        NOT NULL,
+    middle_name     text,
+    avatar_key      text,
+    session_version int         NOT NULL DEFAULT 1,
+    is_active       bool        NOT NULL DEFAULT true,
+    created_at      timestamptz NOT NULL DEFAULT now(),
+    updated_at      timestamptz NOT NULL DEFAULT now(),
+    deleted_at      timestamptz
 );
 
 ALTER TABLE users

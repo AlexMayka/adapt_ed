@@ -29,6 +29,10 @@ var wantConfig = Config{
 		Port:    8000,
 		Secret:  "secret",
 	},
+	Auth: &AuthConfig{
+		AccessTTL:  15 * time.Minute,
+		RefreshTTL: 30 * 24 * time.Hour,
+	},
 	Log: &LogConfig{
 		IsLogging: true,
 		LogLevel:  "info",

@@ -1,15 +1,16 @@
 package config
 
 import (
+	appErr "backend/internal/errors"
 	"backend/internal/utils"
 	"errors"
 	"fmt"
 )
 
-// Validate checks semantic rules for already parsed configuration values.
+// Validate проверяет семантические правила для уже загруженной конфигурации.
 func (c *Config) Validate() error {
 	if c == nil {
-		return fmt.Errorf("%w: config is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: config is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -23,16 +24,16 @@ func (c *Config) Validate() error {
 	errs = appendErr(errs, "env", validateEnv(c.Env))
 
 	if len(errs) > 0 {
-		return fmt.Errorf("%w: %w", utils.ErrValidationFailed, errors.Join(errs...))
+		return fmt.Errorf("%w: %w", appErr.ErrValidationFailed, errors.Join(errs...))
 	}
 
 	return nil
 }
 
-// validateApp validates application-specific settings.
+// validateApp валидирует настройки приложения.
 func validateApp(app *AppConfig) error {
 	if app == nil {
-		return fmt.Errorf("%w: app is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: app is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -48,10 +49,10 @@ func validateApp(app *AppConfig) error {
 	return nil
 }
 
-// validateHTTP validates HTTP server timeout settings.
+// validateHTTP валидирует таймауты HTTP-сервера.
 func validateHTTP(http *HTTPConfig) error {
 	if http == nil {
-		return fmt.Errorf("%w: http is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: http is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -75,10 +76,10 @@ func validateHTTP(http *HTTPConfig) error {
 	return nil
 }
 
-// validateLog validates application logger settings.
+// validateLog валидирует настройки логирования.
 func validateLog(log *LogConfig) error {
 	if log == nil {
-		return fmt.Errorf("%w: log is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: log is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -93,7 +94,7 @@ func validateLog(log *LogConfig) error {
 
 func validateEnv(env *EnvConfig) error {
 	if env == nil {
-		return fmt.Errorf("%w: env is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: env is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -108,10 +109,10 @@ func validateEnv(env *EnvConfig) error {
 	return nil
 }
 
-// validateDB validates PostgreSQL connection and pool settings.
+// validateDB валидирует настройки подключения и пула PostgreSQL.
 func validateDB(db *DBConfig) error {
 	if db == nil {
-		return fmt.Errorf("%w: db is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: db is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -158,10 +159,10 @@ func validateDB(db *DBConfig) error {
 	return nil
 }
 
-// validateMinio validates object storage connection settings.
+// validateMinio валидирует настройки объектного хранилища.
 func validateMinio(minio *MinioConfig) error {
 	if minio == nil {
-		return fmt.Errorf("%w: minio is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: minio is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -179,10 +180,10 @@ func validateMinio(minio *MinioConfig) error {
 	return nil
 }
 
-// validateRedis validates Redis connection settings.
+// validateRedis валидирует настройки подключения к Redis.
 func validateRedis(redis *RedisConfig) error {
 	if redis == nil {
-		return fmt.Errorf("%w: redis is nil", utils.ErrValidationFailed)
+		return fmt.Errorf("%w: redis is nil", appErr.ErrValidationFailed)
 	}
 
 	var errs []error
@@ -209,7 +210,7 @@ func validateRedis(redis *RedisConfig) error {
 	return nil
 }
 
-// validateSSLMode checks if the PG SSL mode is a valid value.
+// validateSSLMode проверяет допустимость режима SSL для PostgreSQL.
 func validateSSLMode(mode string) error {
 	valid := map[string]bool{
 		"disable":     true,

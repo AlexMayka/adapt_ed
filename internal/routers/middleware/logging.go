@@ -7,8 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// StructuredLogging returns middleware that logs every HTTP request
-// with method, path, status, latency, and client IP.
+// StructuredLogging возвращает middleware для структурированного логирования HTTP-запросов.
 func StructuredLogging(log logInf.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

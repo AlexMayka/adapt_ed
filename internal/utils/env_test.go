@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	appErr "backend/internal/errors"
 )
 
 // TestGetEnvTable verifies typed parsing for representative scalar env values.
@@ -166,7 +168,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("missing key", func(t *testing.T) {
 		_ = os.Unsetenv("missing_key")
 		_, err := GetEnv[int]("missing_key")
-		if !errors.Is(err, ErrKeyNotFound) {
+		if !errors.Is(err, appErr.ErrEnvKeyNotFound) {
 			t.Fatalf("expected ErrKeyNotFound, got %v", err)
 		}
 	})
@@ -174,7 +176,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("invalid int parse", func(t *testing.T) {
 		t.Setenv("bad_int", "qwe")
 		_, err := GetEnv[int]("bad_int")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -193,7 +195,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("int8 parse error", func(t *testing.T) {
 		t.Setenv("bad_int8", "200")
 		_, err := GetEnv[int8]("bad_int8")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -201,7 +203,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("int16 parse error", func(t *testing.T) {
 		t.Setenv("bad_int16", "999999")
 		_, err := GetEnv[int16]("bad_int16")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -209,7 +211,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("int32 parse error", func(t *testing.T) {
 		t.Setenv("bad_int32", "999999999999")
 		_, err := GetEnv[int32]("bad_int32")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -217,7 +219,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("int64 parse error", func(t *testing.T) {
 		t.Setenv("bad_int64", "not-an-int")
 		_, err := GetEnv[int64]("bad_int64")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -225,7 +227,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("float32 parse error", func(t *testing.T) {
 		t.Setenv("bad_float32", "abc")
 		_, err := GetEnv[float32]("bad_float32")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -233,7 +235,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("float64 parse error", func(t *testing.T) {
 		t.Setenv("bad_float64", "abc")
 		_, err := GetEnv[float64]("bad_float64")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -241,7 +243,7 @@ func TestGetEnvErrorCases(t *testing.T) {
 	t.Run("bool parse error", func(t *testing.T) {
 		t.Setenv("bad_bool", "yes")
 		_, err := GetEnv[bool]("bad_bool")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -274,7 +276,7 @@ func TestDurationEnv(t *testing.T) {
 	t.Run("invalid duration", func(t *testing.T) {
 		t.Setenv("dur_bad", "abc")
 		_, err := GetDurationEnv("dur_bad")
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})
@@ -282,7 +284,7 @@ func TestDurationEnv(t *testing.T) {
 	t.Run("invalid duration in default getter", func(t *testing.T) {
 		t.Setenv("dur_bad_default", "abc")
 		_, err := GetDurationEnvDefault("dur_bad_default", 30*time.Second)
-		if !errors.Is(err, ErrParseError) {
+		if !errors.Is(err, appErr.ErrEnvParseError) {
 			t.Fatalf("expected ErrParseError, got %v", err)
 		}
 	})

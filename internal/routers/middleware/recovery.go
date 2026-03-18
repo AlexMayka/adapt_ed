@@ -8,8 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Recovery returns middleware that recovers from panics, logs the stack trace,
-// and responds with 500 Internal Server Error.
+// Recovery возвращает middleware для перехвата паник с логированием стека.
 func Recovery(log logInf.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {

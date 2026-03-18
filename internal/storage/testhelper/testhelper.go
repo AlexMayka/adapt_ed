@@ -9,7 +9,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// PgConnInfo holds connection parameters for a test PostgreSQL container.
+// PgConnInfo содержит параметры подключения тестового PostgreSQL-контейнера.
 type PgConnInfo struct {
 	Host     string
 	Port     int
@@ -18,7 +18,7 @@ type PgConnInfo struct {
 	Database string
 }
 
-// MinioConnInfo holds connection parameters for a test MinIO container.
+// MinioConnInfo содержит параметры подключения тестового MinIO-контейнера.
 type MinioConnInfo struct {
 	Host     string
 	Port     int
@@ -26,15 +26,14 @@ type MinioConnInfo struct {
 	Password string
 }
 
-// RedisConnInfo holds connection parameters for a test Redis container.
+// RedisConnInfo содержит параметры подключения тестового Redis-контейнера.
 type RedisConnInfo struct {
 	Host     string
 	Port     int
 	Password string
 }
 
-// StartPostgres launches a postgres:17 container and returns its connection info.
-// Caller is responsible for terminating the container via container.Terminate().
+// StartPostgres запускает тестовый postgres:17 контейнер и возвращает параметры подключения.
 func StartPostgres(ctx context.Context) (testcontainers.Container, PgConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:17",
@@ -76,8 +75,7 @@ func StartPostgres(ctx context.Context) (testcontainers.Container, PgConnInfo, e
 	}, nil
 }
 
-// StartMinio launches a minio/minio:latest container and returns its connection info.
-// Caller is responsible for terminating the container via container.Terminate().
+// StartMinio запускает тестовый MinIO-контейнер и возвращает параметры подключения.
 func StartMinio(ctx context.Context) (testcontainers.Container, MinioConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "minio/minio:latest",
@@ -118,8 +116,7 @@ func StartMinio(ctx context.Context) (testcontainers.Container, MinioConnInfo, e
 	}, nil
 }
 
-// StartRedis launches a redis:7 container with password auth and returns its connection info.
-// Caller is responsible for terminating the container via container.Terminate().
+// StartRedis запускает тестовый Redis-контейнер с паролем и возвращает параметры подключения.
 func StartRedis(ctx context.Context) (testcontainers.Container, RedisConnInfo, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:7",

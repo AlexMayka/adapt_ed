@@ -3,7 +3,8 @@
 CREATE TYPE user_role AS ENUM (
     'student',
     'teacher',
-    'school_admin'
+    'school_admin',
+    'super_admin'
 );
 
 CREATE TYPE difficulty_level AS ENUM (

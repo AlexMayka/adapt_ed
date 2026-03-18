@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Metrics returns a handler that serves Prometheus metrics.
+// Metrics возвращает обработчик Prometheus-метрик.
 // @Summary Метрики приложения
 // @Description Возвращает метрики приложения в формате Prometheus для внешнего сбора и мониторинга.
 // @Tags infra

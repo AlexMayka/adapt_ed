@@ -8,9 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Prometheus returns middleware that records request count and duration
-// using the supplied Prometheus counter and histogram.
-// Labels: method, path (route pattern), status.
+// Prometheus возвращает middleware для сбора метрик количества и длительности запросов.
 func Prometheus(counter *prometheus.CounterVec, duration *prometheus.HistogramVec) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -29,7 +27,7 @@ func Prometheus(counter *prometheus.CounterVec, duration *prometheus.HistogramVe
 	}
 }
 
-// NewHTTPRequestsTotal creates a Prometheus counter for total HTTP requests.
+// NewHTTPRequestsTotal создаёт Prometheus-счётчик общего количества HTTP-запросов.
 func NewHTTPRequestsTotal() *prometheus.CounterVec {
 	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "http_requests_total",
@@ -40,7 +38,7 @@ func NewHTTPRequestsTotal() *prometheus.CounterVec {
 	return counter
 }
 
-// NewHTTPRequestDuration creates a Prometheus histogram for HTTP request duration.
+// NewHTTPRequestDuration создаёт Prometheus-гистограмму длительности HTTP-запросов.
 func NewHTTPRequestDuration() *prometheus.HistogramVec {
 	duration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "http_request_duration_seconds",

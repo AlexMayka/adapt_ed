@@ -3,6 +3,8 @@ package utils
 import (
 	"errors"
 	"testing"
+
+	appErr "backend/internal/errors"
 )
 
 // TestValidatePort checks accepted and rejected port bounds.
@@ -25,7 +27,7 @@ func TestValidatePort(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ValidatePort() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if tt.wantErr && !errors.Is(err, ErrCheckPort) {
+			if tt.wantErr && !errors.Is(err, appErr.ErrCheckPort) {
 				t.Fatalf("expected ErrCheckPort, got %v", err)
 			}
 		})
@@ -50,7 +52,7 @@ func TestValidateEmptinessParam(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ValidateEmptinessParam() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if tt.wantErr && !errors.Is(err, ErrEmptinessParam) {
+			if tt.wantErr && !errors.Is(err, appErr.ErrEmptinessParam) {
 				t.Fatalf("expected ErrEmptinessParam, got %v", err)
 			}
 		})
@@ -67,14 +69,14 @@ func TestValidateParamMore(t *testing.T) {
 
 	t.Run("equal", func(t *testing.T) {
 		err := ValidateParamMore("MAX", 10, 10)
-		if !errors.Is(err, ErrCheckMore) {
+		if !errors.Is(err, appErr.ErrCheckMore) {
 			t.Fatalf("expected ErrCheckMore, got %v", err)
 		}
 	})
 
 	t.Run("less", func(t *testing.T) {
 		err := ValidateParamMore("MAX", -1, 0)
-		if !errors.Is(err, ErrCheckMore) {
+		if !errors.Is(err, appErr.ErrCheckMore) {
 			t.Fatalf("expected ErrCheckMore, got %v", err)
 		}
 	})
@@ -92,7 +94,7 @@ func TestValidateLogLevel(t *testing.T) {
 	}
 
 	err := ValidateLogLevel("verbose")
-	if !errors.Is(err, ErrCheckLevel) {
+	if !errors.Is(err, appErr.ErrCheckLevel) {
 		t.Fatalf("expected ErrCheckLevel, got %v", err)
 	}
 }

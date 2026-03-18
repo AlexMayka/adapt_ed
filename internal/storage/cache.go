@@ -1,18 +1,15 @@
 package storage
 
 import (
+	appErr "backend/internal/errors"
 	"backend/internal/storage/interfaces"
 	"backend/internal/storage/redis"
 	"context"
-	"errors"
 	"fmt"
 	"time"
 )
 
-// ErrTypeCache returned when an unsupported cache type is requested.
-var ErrTypeCache = errors.New("type cache error")
-
-// InitCache creates a cache/key-value storage client selected by typeCache.
+// InitCache создаёт клиент кэш-хранилища по типу typeCache.
 func InitCache(ctx context.Context, host string, port, db int,
 	password string, useSSL bool, maxRetries int, timeout time.Duration, typeCache interfaces.CacheType) (interfaces.CacheStorage, error) {
 
@@ -21,5 +18,5 @@ func InitCache(ctx context.Context, host string, port, db int,
 		return redis.Init(ctx, host, port, db, password, useSSL, maxRetries, timeout)
 	}
 
-	return nil, fmt.Errorf("%w: %s", ErrTypeCache, typeCache)
+	return nil, fmt.Errorf("%w: %s", appErr.ErrTypeCache, typeCache)
 }

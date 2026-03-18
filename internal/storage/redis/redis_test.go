@@ -38,10 +38,11 @@ func TestMain(m *testing.M) {
 func newTestConnect(t *testing.T) *Connect {
 	t.Helper()
 	ctx := context.Background()
-	con, err := Init(ctx, rdInfo.Host, rdInfo.Port, 0, rdInfo.Password, false, 3, 10*time.Second)
+	iface, err := Init(ctx, rdInfo.Host, rdInfo.Port, 0, rdInfo.Password, false, 3, 10*time.Second)
 	if err != nil {
 		t.Fatalf("Init() unexpected error: %v", err)
 	}
+	con := iface.(*Connect)
 	t.Cleanup(func() { con.Close() })
 	return con
 }
@@ -120,6 +121,65 @@ func TestDelete(t *testing.T) {
 	if exists != 0 {
 		t.Fatal("key still exists after DEL")
 	}
+}
+
+func TestCacheStorage_SetGetDel(t *testing.T) {
+	ctx := context.Background()
+	con := newTestConnect(t)
+
+	t.Run("set and get", func(t *testing.T) {
+		if err := con.Set(ctx, "cs:key1", "value1", time.Minute); err != nil {
+			t.Fatalf("Set() failed: %v", err)
+		}
+		got, err := con.Get(ctx, "cs:key1")
+		if err != nil {
+			t.Fatalf("Get() failed: %v", err)
+		}
+		if got != "value1" {
+			t.Fatalf("Get() = %q, want %q", got, "value1")
+		}
+	})
+
+	t.Run("get missing key returns empty string", func(t *testing.T) {
+		got, err := con.Get(ctx, "cs:nonexistent")
+		if err != nil {
+			t.Fatalf("Get() unexpected error: %v", err)
+		}
+		if got != "" {
+			t.Fatalf("Get() = %q, want empty string", got)
+		}
+	})
+
+	t.Run("del removes key", func(t *testing.T) {
+		con.Set(ctx, "cs:delme", "temp", time.Minute)
+
+		if err := con.Del(ctx, "cs:delme"); err != nil {
+			t.Fatalf("Del() failed: %v", err)
+		}
+		got, _ := con.Get(ctx, "cs:delme")
+		if got != "" {
+			t.Fatalf("Get() after Del() = %q, want empty", got)
+		}
+	})
+
+	t.Run("set with ttl expires", func(t *testing.T) {
+		con.Set(ctx, "cs:expiring", "temp", 100*time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
+
+		got, err := con.Get(ctx, "cs:expiring")
+		if err != nil {
+			t.Fatalf("Get() unexpected error: %v", err)
+		}
+		if got != "" {
+			t.Fatalf("Get() = %q, expected empty after TTL", got)
+		}
+	})
+
+	t.Run("del nonexistent key no error", func(t *testing.T) {
+		if err := con.Del(ctx, "cs:never_existed"); err != nil {
+			t.Fatalf("Del() on missing key failed: %v", err)
+		}
+	})
 }
 
 func TestDifferentDBs(t *testing.T) {

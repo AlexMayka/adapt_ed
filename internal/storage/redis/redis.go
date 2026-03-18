@@ -1,26 +1,22 @@
 package redis
 
 import (
+	appErr "backend/internal/errors"
 	"backend/internal/storage/interfaces"
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-// ErrConnectionFailed returned when Redis is unreachable or authentication fails.
-var ErrConnectionFailed = errors.New("redis connection failed")
-
-// Connect wraps a go-redis client providing connection lifecycle management.
+// Connect оборачивает go-redis клиент с управлением жизненным циклом соединения.
 type Connect struct {
 	client *redis.Client
 }
 
-// Init creates a Redis client, verifies the connection with Ping and returns a ready Connect.
-// timeout is used for dial, read and write deadlines.
+// Init создаёт Redis-клиент, проверяет соединение через Ping и возвращает готовый Connect.
 func Init(ctx context.Context, host string, port, db int, password string, useSSL bool, maxRetries int, timeout time.Duration) (interfaces.CacheStorage, error) {
 	opts := &redis.Options{
 		Addr:         fmt.Sprintf("%s:%d", host, port),
@@ -43,23 +39,42 @@ func Init(ctx context.Context, host string, port, db int, password string, useSS
 	con := &Connect{client: client}
 	if err := con.Ping(ctx); err != nil {
 		client.Close()
-		return nil, fmt.Errorf("%w: %v", ErrConnectionFailed, err)
+		return nil, fmt.Errorf("%w: %v", appErr.ErrRedisConnectionFailed, err)
 	}
 
 	return con, nil
 }
 
-// Close gracefully shuts down the Redis connection.
+// Close закрывает соединение с Redis.
 func (c *Connect) Close() error {
 	return c.client.Close()
 }
 
-// Ping sends a PING command to verify the connection is alive.
+// Ping проверяет доступность Redis через команду PING.
 func (c *Connect) Ping(ctx context.Context) error {
 	return c.client.Ping(ctx).Err()
 }
 
-// Client returns the underlying go-redis client for direct command access.
+// Set сохраняет пару ключ-значение с заданным TTL.
+func (c *Connect) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
+	return c.client.Set(ctx, key, value, ttl).Err()
+}
+
+// Get возвращает значение по ключу. Пустая строка и nil при отсутствии ключа.
+func (c *Connect) Get(ctx context.Context, key string) (string, error) {
+	val, err := c.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", nil
+	}
+	return val, err
+}
+
+// Del удаляет ключ.
+func (c *Connect) Del(ctx context.Context, key string) error {
+	return c.client.Del(ctx, key).Err()
+}
+
+// Client возвращает базовый go-redis клиент для прямого доступа к командам.
 func (c *Connect) Client() *redis.Client {
 	return c.client
 }

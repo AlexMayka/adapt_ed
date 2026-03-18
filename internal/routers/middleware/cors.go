@@ -6,8 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CORS returns middleware that sets permissive CORS headers.
-// Suitable for MVP; restrict AllowOrigins in production.
+// CORS возвращает middleware с разрешающими CORS-заголовками (MVP-режим).
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")

@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// SlogLogger реализует интерфейс Logger через стандартный log/slog.
 type SlogLogger struct {
 	isLogger bool
 	logger   *slog.Logger
@@ -23,12 +24,13 @@ var loggerLevels = map[string]slog.Level{
 func getSlogLevel(level string) slog.Level {
 	lv, ok := loggerLevels[level]
 	if !ok {
-		panic("No search level")
+		return slog.LevelInfo
 	}
 
 	return lv
 }
 
+// Init создаёт slog-логгер с JSON-выводом и контекстом приложения.
 func Init(appVersion, instance, envType, logLevel, appService string, isLogger bool) interfaces.Logger {
 	slogLevel := getSlogLevel(logLevel)
 	opts := &slog.HandlerOptions{

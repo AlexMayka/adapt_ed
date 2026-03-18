@@ -1,38 +1,27 @@
 package postgres
 
 import (
-	"backend/internal/storage/interfaces"
+	appErr "backend/internal/errors"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
 
-var (
-	// ErrParseConfig returned when the DSN string cannot be parsed.
-	ErrParseConfig = errors.New("failed to parse config")
-	// ErrCreatePool returned when pgxpool fails to initialize.
-	ErrCreatePool = errors.New("failed to create pool")
-	// ErrPing returned when the initial health-check ping fails.
-	ErrPing = errors.New("failed to ping")
-)
-
-// PoolPsg wraps a pgxpool.Pool with a query timeout for convenience.
+// PoolPsg оборачивает pgxpool.Pool с таймаутом запросов.
 type PoolPsg struct {
 	Pool         *pgxpool.Pool
 	QueryTimeout time.Duration
 }
 
-// NewPool creates a PostgreSQL connection pool, configures its limits and verifies
-// connectivity with a ping bounded by pingTimeout.
+// NewPool создаёт пул соединений PostgreSQL и проверяет доступность через ping.
 func NewPool(ctx context.Context, host, user, password, name string, port int, maxConns, minConns int32,
-	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration, sslMode string) (interfaces.DbStorage, error) {
+	connLifetime, connIdleTime, healthCheckTime, queryTimeout, pingTimeout time.Duration, sslMode string) (*PoolPsg, error) {
 
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", user, password, host, port, name, sslMode)
 	poolCnf, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrParseConfig, err)
+		return nil, fmt.Errorf("%w: %w", appErr.ErrPgParseConfig, err)
 	}
 
 	poolCnf.MaxConns = maxConns
@@ -43,7 +32,7 @@ func NewPool(ctx context.Context, host, user, password, name string, port int, m
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolCnf)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrCreatePool, err)
+		return nil, fmt.Errorf("%w: %w", appErr.ErrPgCreatePool, err)
 	}
 
 	pingCtx, cancel := context.WithTimeout(ctx, pingTimeout)
@@ -51,18 +40,18 @@ func NewPool(ctx context.Context, host, user, password, name string, port int, m
 
 	if err := pool.Ping(pingCtx); err != nil {
 		pool.Close()
-		return nil, fmt.Errorf("%w: %w", ErrPing, err)
+		return nil, fmt.Errorf("%w: %w", appErr.ErrPgPing, err)
 	}
 
 	return &PoolPsg{Pool: pool, QueryTimeout: queryTimeout}, nil
 }
 
-// Ping verifies that the database is reachable.
+// Ping проверяет доступность базы данных.
 func (p *PoolPsg) Ping(ctx context.Context) error {
 	return p.Pool.Ping(ctx)
 }
 
-// Close releases all connections in the pool.
+// Close освобождает все соединения пула.
 func (p *PoolPsg) Close() error {
 	if p.Pool != nil {
 		p.Pool.Close()
