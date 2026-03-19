@@ -39,3 +39,13 @@ type User struct {
 	UpdatedAt      *time.Time
 	DeletedAt      *time.Time
 }
+
+// UserFilter параметры фильтрации и пагинации для списка пользователей.
+type UserFilter struct {
+	SchoolID *uuid.UUID
+	ClassID  *uuid.UUID
+	Role     *UserRole
+	Name     *string
+	Limit    int
+	Offset   int
+}

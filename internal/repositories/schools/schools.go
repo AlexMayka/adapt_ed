@@ -76,14 +76,12 @@ func (r *SchoolRepository) List(ctx context.Context, filter dto.SchoolFilter) ([
 
 	where := "WHERE " + strings.Join(conditions, " AND ")
 
-	// Получаем общее количество
 	countQuery := "SELECT COUNT(*) FROM schools " + where
 	var total int
 	if err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Получаем записи с пагинацией
 	query := fmt.Sprintf(`
 		SELECT id, name, city, logo_key, created_at, updated_at, deleted_at
 		FROM schools

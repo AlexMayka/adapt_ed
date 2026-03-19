@@ -595,6 +595,158 @@ definitions:
         example: МКОУ 'Никольская СОШ'
         type: string
     type: object
+  user.ChangePasswordRequest:
+    properties:
+      new_password:
+        description: Новый пароль
+        example: NewPass1!
+        minLength: 8
+        type: string
+      old_password:
+        description: Текущий пароль
+        example: OldPass1!
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  user.ListResponse:
+    properties:
+      total:
+        description: Общее количество
+        example: 42
+        type: integer
+      users:
+        description: Список пользователей
+        items:
+          $ref: '#/definitions/user.UserResponse'
+        type: array
+    type: object
+  user.SetActiveRequest:
+    properties:
+      is_active:
+        description: Активен ли пользователь
+        example: false
+        type: boolean
+    type: object
+  user.UpdateProfileRequest:
+    properties:
+      avatar_key:
+        description: Ключ аватара
+        example: avatars/new/photo.png
+        type: string
+      email:
+        description: Email
+        example: new@example.com
+        type: string
+      first_name:
+        description: Имя
+        example: Пётр
+        type: string
+      last_name:
+        description: Фамилия
+        example: Петров
+        type: string
+      middle_name:
+        description: Отчество
+        example: Петрович
+        type: string
+    type: object
+  user.UpdateUserRequest:
+    properties:
+      avatar_key:
+        description: Ключ аватара
+        example: avatars/new/photo.png
+        type: string
+      class_id:
+        description: UUID класса
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      email:
+        description: Email
+        example: new@example.com
+        type: string
+      first_name:
+        description: Имя
+        example: Пётр
+        type: string
+      last_name:
+        description: Фамилия
+        example: Петров
+        type: string
+      middle_name:
+        description: Отчество
+        example: Петрович
+        type: string
+      school_id:
+        description: UUID школы
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+    type: object
+  user.UserID:
+    properties:
+      id:
+        description: UUID пользователя
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+    type: object
+  user.UserResponse:
+    properties:
+      avatar_key:
+        description: Ключ аватара в S3-хранилище
+        example: avatars/10cb44c1/photo.png
+        type: string
+      class_id:
+        description: UUID класса
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      created_at:
+        description: Дата создания
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      email:
+        description: Email пользователя
+        example: example@example.com
+        type: string
+      first_name:
+        description: Имя
+        example: Иван
+        type: string
+      id:
+        description: UUID пользователя
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      is_active:
+        description: Признак активности
+        example: true
+        type: boolean
+      last_name:
+        description: Фамилия
+        example: Иванов
+        type: string
+      middle_name:
+        description: Отчество
+        example: Иванович
+        type: string
+      role:
+        allOf:
+        - $ref: '#/definitions/dto.UserRole'
+        description: Роль пользователя
+        enum:
+        - student
+        - teacher
+        - school_admin
+        - super_admin
+        example: student
+      school_id:
+        description: UUID школы
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+      updated_at:
+        description: Дата обновления
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    type: object
 info:
   contact: {}
   description: API description
@@ -1249,6 +1401,272 @@ paths:
       summary: Восстановление класса
       tags:
       - classes
+  /users:
+    get:
+      description: Возвращает список пользователей с фильтрацией и пагинацией. school_admin
+        видит только свою школу.
+      parameters:
+      - description: Фильтр по школе
+        in: query
+        name: school_id
+        type: string
+      - description: Фильтр по классу
+        in: query
+        name: class_id
+        type: string
+      - description: Фильтр по роли
+        in: query
+        name: role
+        type: string
+      - description: Поиск по ФИО
+        in: query
+        name: name
+        type: string
+      - description: Количество записей
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.ListResponse'
+      security:
+      - BearerAuth: []
+      summary: Список пользователей
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      description: Мягкое удаление. Доступно только super_admin.
+      parameters:
+      - description: UUID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserID'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление пользователя
+      tags:
+      - users
+    get:
+      description: Возвращает данные пользователя по ID.
+      parameters:
+      - description: UUID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение пользователя
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные пользователя, включая привязку к школе и классу.
+      parameters:
+      - description: UUID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Обновляемые поля
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Email уже зарегистрирован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление пользователя админом
+      tags:
+      - users
+  /users/{id}/active:
+    patch:
+      consumes:
+      - application/json
+      description: Устанавливает активность пользователя. Доступно super_admin и school_admin
+        своей школы.
+      parameters:
+      - description: UUID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Активность
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.SetActiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Активация/деактивация пользователя
+      tags:
+      - users
+  /users/{id}/restore:
+    post:
+      description: Восстанавливает мягко удалённого пользователя. Доступно только
+        super_admin.
+      parameters:
+      - description: UUID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Восстановление пользователя
+      tags:
+      - users
+  /users/me:
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет ФИО, email и аватар текущего пользователя.
+      parameters:
+      - description: Обновляемые поля
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Email уже зарегистрирован
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление своего профиля
+      tags:
+      - users
+  /users/me/password:
+    post:
+      consumes:
+      - application/json
+      description: Меняет пароль текущего пользователя.
+      parameters:
+      - description: Старый и новый пароль
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/user.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Неверный текущий пароль
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Смена пароля
+      tags:
+      - users
 securityDefinitions:
   BearerAuth:
     description: 'Введите токен в формате: Bearer {access_token}'
@@ -1267,3 +1685,5 @@ tags:
 - description: 'Управление классами внутри школы: создание, обновление, удаление и
     поиск.'
   name: classes
+- description: 'Управление пользователями: профиль, пароль, список, активация, удаление.'
+  name: users

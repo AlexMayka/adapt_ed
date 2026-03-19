@@ -14,10 +14,12 @@ import (
 	"backend/internal/routers/handlers/auth"
 	classH "backend/internal/routers/handlers/class"
 	"backend/internal/routers/handlers/school"
+	userH "backend/internal/routers/handlers/user"
 	"backend/internal/routers/middleware"
 	authSvc "backend/internal/services/auth"
 	classSvc "backend/internal/services/class"
 	schoolSvc "backend/internal/services/school"
+	userSvc "backend/internal/services/user"
 	stgInf "backend/internal/storage/interfaces"
 	"backend/internal/storage/postgres"
 	"github.com/gin-gonic/gin"
@@ -127,6 +129,45 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 		schoolSuperGroup.DELETE("/:id", schoolH.DeleteSchool)
 		schoolSuperGroup.POST("/:id/restore", schoolH.RestoreSchool)
 		schoolSuperGroup.POST("/:id/classes/:class_id/restore", classHandlers.RestoreClass)
+	}
+
+	// Сборка зависимостей пользователей
+	userService := userSvc.NewUserService(deps.Logger, userRepo)
+	userHandlers := userH.NewUserHandlers(deps.Logger, userService)
+
+	// Операции текущего пользователя
+	userSelfGroup := r.Group("/users")
+	userSelfGroup.Use(middleware.Authorization(authManager))
+	{
+		userSelfGroup.PATCH("/me", userHandlers.UpdateProfile)
+		userSelfGroup.POST("/me/password", userHandlers.ChangePassword)
+	}
+
+	// Чтение пользователей (admin)
+	userReadGroup := r.Group("/users")
+	userReadGroup.Use(middleware.Authorization(authManager))
+	userReadGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin, dto.RoleTeacher))
+	{
+		userReadGroup.GET("", userHandlers.ListUsers)
+		userReadGroup.GET("/:id", userHandlers.GetUser)
+	}
+
+	// Управление пользователями (admin)
+	userAdminGroup := r.Group("/users")
+	userAdminGroup.Use(middleware.Authorization(authManager))
+	userAdminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
+	{
+		userAdminGroup.PATCH("/:id", userHandlers.UpdateUser)
+		userAdminGroup.PATCH("/:id/active", userHandlers.SetActive)
+	}
+
+	// Удаление/восстановление (super_admin)
+	userSuperGroup := r.Group("/users")
+	userSuperGroup.Use(middleware.Authorization(authManager))
+	userSuperGroup.Use(middleware.RequireRole(dto.RoleSuperAdmin))
+	{
+		userSuperGroup.DELETE("/:id", userHandlers.DeleteUser)
+		userSuperGroup.POST("/:id/restore", userHandlers.RestoreUser)
 	}
 
 	return r

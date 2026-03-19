@@ -77,6 +77,8 @@ func setSwagger(appName, host, version, envType, instance string) {
 // @tag.description Управление школами: создание, обновление, удаление и поиск.
 // @tag.name classes
 // @tag.description Управление классами внутри школы: создание, обновление, удаление и поиск.
+// @tag.name users
+// @tag.description Управление пользователями: профиль, пароль, список, активация, удаление.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {

@@ -1013,6 +1013,421 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список пользователей с фильтрацией и пагинацией. school_admin видит только свою школу.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Список пользователей",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Фильтр по школе",
+                        "name": "school_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Фильтр по классу",
+                        "name": "class_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Фильтр по роли",
+                        "name": "role",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Поиск по ФИО",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество записей",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.ListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет ФИО, email и аватар текущего пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Обновление своего профиля",
+                "parameters": [
+                    {
+                        "description": "Обновляемые поля",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Email уже зарегистрирован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/password": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Меняет пароль текущего пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Смена пароля",
+                "parameters": [
+                    {
+                        "description": "Старый и новый пароль",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неверный текущий пароль",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает данные пользователя по ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Получение пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Мягкое удаление. Доступно только super_admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Удаление пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserID"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет данные пользователя, включая привязку к школе и классу.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Обновление пользователя админом",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Обновляемые поля",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Email уже зарегистрирован",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/active": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Устанавливает активность пользователя. Доступно super_admin и school_admin своей школы.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Активация/деактивация пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Активность",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.SetActiveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Восстанавливает мягко удалённого пользователя. Доступно только super_admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Восстановление пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/user.UserResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1804,6 +2219,208 @@ const docTemplate = `{
                     "example": "МКОУ 'Никольская СОШ'"
                 }
             }
+        },
+        "user.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "description": "Новый пароль",
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "NewPass1!"
+                },
+                "old_password": {
+                    "description": "Текущий пароль",
+                    "type": "string",
+                    "example": "OldPass1!"
+                }
+            }
+        },
+        "user.ListResponse": {
+            "type": "object",
+            "properties": {
+                "total": {
+                    "description": "Общее количество",
+                    "type": "integer",
+                    "example": 42
+                },
+                "users": {
+                    "description": "Список пользователей",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/user.UserResponse"
+                    }
+                }
+            }
+        },
+        "user.SetActiveRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "description": "Активен ли пользователь",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "user.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "avatar_key": {
+                    "description": "Ключ аватара",
+                    "type": "string",
+                    "example": "avatars/new/photo.png"
+                },
+                "email": {
+                    "description": "Email",
+                    "type": "string",
+                    "example": "new@example.com"
+                },
+                "first_name": {
+                    "description": "Имя",
+                    "type": "string",
+                    "example": "Пётр"
+                },
+                "last_name": {
+                    "description": "Фамилия",
+                    "type": "string",
+                    "example": "Петров"
+                },
+                "middle_name": {
+                    "description": "Отчество",
+                    "type": "string",
+                    "example": "Петрович"
+                }
+            }
+        },
+        "user.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "avatar_key": {
+                    "description": "Ключ аватара",
+                    "type": "string",
+                    "example": "avatars/new/photo.png"
+                },
+                "class_id": {
+                    "description": "UUID класса",
+                    "type": "string",
+                    "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
+                },
+                "email": {
+                    "description": "Email",
+                    "type": "string",
+                    "example": "new@example.com"
+                },
+                "first_name": {
+                    "description": "Имя",
+                    "type": "string",
+                    "example": "Пётр"
+                },
+                "last_name": {
+                    "description": "Фамилия",
+                    "type": "string",
+                    "example": "Петров"
+                },
+                "middle_name": {
+                    "description": "Отчество",
+                    "type": "string",
+                    "example": "Петрович"
+                },
+                "school_id": {
+                    "description": "UUID школы",
+                    "type": "string",
+                    "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
+                }
+            }
+        },
+        "user.UserID": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "UUID пользователя",
+                    "type": "string",
+                    "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
+                }
+            }
+        },
+        "user.UserResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_key": {
+                    "description": "Ключ аватара в S3-хранилище",
+                    "type": "string",
+                    "example": "avatars/10cb44c1/photo.png"
+                },
+                "class_id": {
+                    "description": "UUID класса",
+                    "type": "string",
+                    "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
+                },
+                "created_at": {
+                    "description": "Дата создания",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                },
+                "email": {
+                    "description": "Email пользователя",
+                    "type": "string",
+                    "example": "example@example.com"
+                },
+                "first_name": {
+                    "description": "Имя",
+                    "type": "string",
+                    "example": "Иван"
+                },
+                "id": {
+                    "description": "UUID пользователя",
+                    "type": "string",
+                    "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
+                },
+                "is_active": {
+                    "description": "Признак активности",
+                    "type": "boolean",
+                    "example": true
+                },
+                "last_name": {
+                    "description": "Фамилия",
+                    "type": "string",
+                    "example": "Иванов"
+                },
+                "middle_name": {
+                    "description": "Отчество",
+                    "type": "string",
+                    "example": "Иванович"
+                },
+                "role": {
+                    "description": "Роль пользователя",
+                    "enum": [
+                        "student",
+                        "teacher",
+                        "school_admin",
+                        "super_admin"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.UserRole"
+                        }
+                    ],
+                    "example": "student"
+                },
+                "school_id": {
+                    "description": "UUID школы",
+                    "type": "string",
+                    "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
+                },
+                "updated_at": {
+                    "description": "Дата обновления",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -1830,6 +2447,10 @@ const docTemplate = `{
         {
             "description": "Управление классами внутри школы: создание, обновление, удаление и поиск.",
             "name": "classes"
+        },
+        {
+            "description": "Управление пользователями: профиль, пароль, список, активация, удаление.",
+            "name": "users"
         }
     ]
 }`
