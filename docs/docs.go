@@ -641,42 +641,52 @@ const docTemplate = `{
             ],
             "properties": {
                 "avatar_key": {
+                    "description": "Ключ аватара в S3-хранилище",
                     "type": "string",
                     "example": "avatars/10cb44c1/photo.png"
                 },
                 "class_id": {
+                    "description": "UUID класса пользователя",
                     "type": "string",
                     "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
                 },
                 "created_at": {
+                    "description": "Дата создания пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 },
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "first_name": {
+                    "description": "Имя пользователя",
                     "type": "string",
                     "example": "Иван"
                 },
                 "id": {
+                    "description": "UUID пользователя",
                     "type": "string",
                     "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 },
                 "is_active": {
+                    "description": "Признак активности пользователя",
                     "type": "boolean",
                     "example": true
                 },
                 "last_name": {
+                    "description": "Фамилия пользователя",
                     "type": "string",
                     "example": "Иванов"
                 },
                 "middle_name": {
+                    "description": "Отчество пользователя, если имеется",
                     "type": "string",
                     "example": "Иванович"
                 },
                 "role": {
+                    "description": "Роль пользователя в системе",
                     "enum": [
                         "student",
                         "teacher",
@@ -691,10 +701,12 @@ const docTemplate = `{
                     "example": "student"
                 },
                 "school_id": {
+                    "description": "UUID школы пользователя",
                     "type": "string",
                     "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
                 },
                 "updated_at": {
+                    "description": "Дата последнего обновления пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 }
@@ -708,10 +720,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "password": {
+                    "description": "Пароль пользователя, минимум 8 символов",
                     "type": "string",
                     "minLength": 8,
                     "example": "NFMpC9!fm;ARqoh"
@@ -728,46 +742,57 @@ const docTemplate = `{
             ],
             "properties": {
                 "access_token": {
+                    "description": "JWT access token",
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
                 "class_id": {
+                    "description": "UUID класса пользователя",
                     "type": "string",
                     "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
                 },
                 "created_at": {
+                    "description": "Дата создания пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 },
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "first_name": {
+                    "description": "Имя пользователя",
                     "type": "string",
                     "example": "Иван"
                 },
                 "id": {
+                    "description": "UUID пользователя",
                     "type": "string",
                     "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 },
                 "is_active": {
+                    "description": "Признак активности пользователя",
                     "type": "boolean",
                     "example": true
                 },
                 "last_name": {
+                    "description": "Фамилия пользователя",
                     "type": "string",
                     "example": "Иванов"
                 },
                 "middle_name": {
+                    "description": "Отчество пользователя, если имеется",
                     "type": "string",
                     "example": "Иванович"
                 },
                 "refresh_token": {
+                    "description": "Refresh token для обновления access token",
                     "type": "string",
                     "example": "b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234"
                 },
                 "role": {
+                    "description": "Роль пользователя в системе",
                     "enum": [
                         "student",
                         "teacher",
@@ -782,10 +807,12 @@ const docTemplate = `{
                     "example": "student"
                 },
                 "school_id": {
+                    "description": "UUID школы пользователя",
                     "type": "string",
                     "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
                 },
                 "updated_at": {
+                    "description": "Дата последнего обновления пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 }
@@ -798,6 +825,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "refresh_token": {
+                    "description": "Refresh token текущей сессии",
                     "type": "string",
                     "example": "b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234"
                 }
@@ -807,6 +835,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
+                    "description": "UUID пользователя",
                     "type": "string",
                     "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 }
@@ -820,10 +849,12 @@ const docTemplate = `{
             ],
             "properties": {
                 "refresh_token": {
+                    "description": "Текущий refresh token",
                     "type": "string",
                     "example": "b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234"
                 },
                 "user_id": {
+                    "description": "UUID пользователя",
                     "type": "string",
                     "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 }
@@ -833,10 +864,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "access_token": {
+                    "description": "JWT access token",
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
                 "refresh_token": {
+                    "description": "Refresh token для обновления access token",
                     "type": "string",
                     "example": "b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234"
                 }
@@ -852,22 +885,27 @@ const docTemplate = `{
             ],
             "properties": {
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "first_name": {
+                    "description": "Имя пользователя",
                     "type": "string",
                     "example": "Иван"
                 },
                 "last_name": {
+                    "description": "Фамилия пользователя",
                     "type": "string",
                     "example": "Иванов"
                 },
                 "middle_name": {
+                    "description": "Отчество пользователя, если имеется",
                     "type": "string",
                     "example": "Иванович"
                 },
                 "password": {
+                    "description": "Пароль пользователя, минимум 8 символов",
                     "type": "string",
                     "minLength": 8,
                     "example": "NFMpC9!fm;ARqoh"
@@ -884,26 +922,32 @@ const docTemplate = `{
             ],
             "properties": {
                 "class_id": {
+                    "description": "UUID класса пользователя",
                     "type": "string",
                     "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
                 },
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "first_name": {
+                    "description": "Имя пользователя",
                     "type": "string",
                     "example": "Иван"
                 },
                 "last_name": {
+                    "description": "Фамилия пользователя",
                     "type": "string",
                     "example": "Иванов"
                 },
                 "middle_name": {
+                    "description": "Отчество пользователя, если имеется",
                     "type": "string",
                     "example": "Иванович"
                 },
                 "role": {
+                    "description": "Роль пользователя в системе",
                     "enum": [
                         "student",
                         "teacher",
@@ -918,6 +962,7 @@ const docTemplate = `{
                     "example": "student"
                 },
                 "school_id": {
+                    "description": "UUID школы пользователя",
                     "type": "string",
                     "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
                 }
@@ -933,46 +978,57 @@ const docTemplate = `{
             ],
             "properties": {
                 "access_token": {
+                    "description": "JWT access token",
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
                 "class_id": {
+                    "description": "UUID класса пользователя",
                     "type": "string",
                     "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
                 },
                 "created_at": {
+                    "description": "Дата создания пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 },
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "first_name": {
+                    "description": "Имя пользователя",
                     "type": "string",
                     "example": "Иван"
                 },
                 "id": {
+                    "description": "UUID пользователя",
                     "type": "string",
                     "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 },
                 "is_active": {
+                    "description": "Признак активности пользователя",
                     "type": "boolean",
                     "example": true
                 },
                 "last_name": {
+                    "description": "Фамилия пользователя",
                     "type": "string",
                     "example": "Иванов"
                 },
                 "middle_name": {
+                    "description": "Отчество пользователя, если имеется",
                     "type": "string",
                     "example": "Иванович"
                 },
                 "refresh_token": {
+                    "description": "Refresh token для обновления access token",
                     "type": "string",
                     "example": "b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234"
                 },
                 "role": {
+                    "description": "Роль пользователя в системе",
                     "enum": [
                         "student",
                         "teacher",
@@ -987,10 +1043,12 @@ const docTemplate = `{
                     "example": "student"
                 },
                 "school_id": {
+                    "description": "UUID школы пользователя",
                     "type": "string",
                     "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
                 },
                 "updated_at": {
+                    "description": "Дата последнего обновления пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 }
@@ -1006,42 +1064,52 @@ const docTemplate = `{
             ],
             "properties": {
                 "class_id": {
+                    "description": "UUID класса пользователя",
                     "type": "string",
                     "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
                 },
                 "created_at": {
+                    "description": "Дата создания пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 },
                 "email": {
+                    "description": "Email пользователя",
                     "type": "string",
                     "example": "example@example.com"
                 },
                 "first_name": {
+                    "description": "Имя пользователя",
                     "type": "string",
                     "example": "Иван"
                 },
                 "id": {
+                    "description": "UUID пользователя",
                     "type": "string",
                     "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 },
                 "is_active": {
+                    "description": "Признак активности пользователя",
                     "type": "boolean",
                     "example": true
                 },
                 "last_name": {
+                    "description": "Фамилия пользователя",
                     "type": "string",
                     "example": "Иванов"
                 },
                 "middle_name": {
+                    "description": "Отчество пользователя, если имеется",
                     "type": "string",
                     "example": "Иванович"
                 },
                 "password": {
+                    "description": "Сгенерированный временный пароль пользователя",
                     "type": "string",
                     "example": "NFMpC9!fm;ARqoh"
                 },
                 "role": {
+                    "description": "Роль пользователя в системе",
                     "enum": [
                         "student",
                         "teacher",
@@ -1056,10 +1124,12 @@ const docTemplate = `{
                     "example": "student"
                 },
                 "school_id": {
+                    "description": "UUID школы пользователя",
                     "type": "string",
                     "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
                 },
                 "updated_at": {
+                    "description": "Дата последнего обновления пользователя",
                     "type": "string",
                     "example": "2026-03-16T10:30:00Z"
                 }

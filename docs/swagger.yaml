@@ -3,35 +3,45 @@ definitions:
   auth.GetMeResponse:
     properties:
       avatar_key:
+        description: Ключ аватара в S3-хранилище
         example: avatars/10cb44c1/photo.png
         type: string
       class_id:
+        description: UUID класса пользователя
         example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
         type: string
       created_at:
+        description: Дата создания пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       first_name:
+        description: Имя пользователя
         example: Иван
         type: string
       id:
+        description: UUID пользователя
         example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
       is_active:
+        description: Признак активности пользователя
         example: true
         type: boolean
       last_name:
+        description: Фамилия пользователя
         example: Иванов
         type: string
       middle_name:
+        description: Отчество пользователя, если имеется
         example: Иванович
         type: string
       role:
         allOf:
         - $ref: '#/definitions/dto.UserRole'
+        description: Роль пользователя в системе
         enum:
         - student
         - teacher
@@ -39,9 +49,11 @@ definitions:
         - super_admin
         example: student
       school_id:
+        description: UUID школы пользователя
         example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
         type: string
       updated_at:
+        description: Дата последнего обновления пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
     required:
@@ -53,9 +65,11 @@ definitions:
   auth.LoginRequest:
     properties:
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       password:
+        description: Пароль пользователя, минимум 8 символов
         example: NFMpC9!fm;ARqoh
         minLength: 8
         type: string
@@ -66,38 +80,49 @@ definitions:
   auth.LoginResponse:
     properties:
       access_token:
+        description: JWT access token
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       class_id:
+        description: UUID класса пользователя
         example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
         type: string
       created_at:
+        description: Дата создания пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       first_name:
+        description: Имя пользователя
         example: Иван
         type: string
       id:
+        description: UUID пользователя
         example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
       is_active:
+        description: Признак активности пользователя
         example: true
         type: boolean
       last_name:
+        description: Фамилия пользователя
         example: Иванов
         type: string
       middle_name:
+        description: Отчество пользователя, если имеется
         example: Иванович
         type: string
       refresh_token:
+        description: Refresh token для обновления access token
         example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
         type: string
       role:
         allOf:
         - $ref: '#/definitions/dto.UserRole'
+        description: Роль пользователя в системе
         enum:
         - student
         - teacher
@@ -105,9 +130,11 @@ definitions:
         - super_admin
         example: student
       school_id:
+        description: UUID школы пользователя
         example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
         type: string
       updated_at:
+        description: Дата последнего обновления пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
     required:
@@ -119,6 +146,7 @@ definitions:
   auth.LogoutRequest:
     properties:
       refresh_token:
+        description: Refresh token текущей сессии
         example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
         type: string
     required:
@@ -127,15 +155,18 @@ definitions:
   auth.LogoutResponse:
     properties:
       id:
+        description: UUID пользователя
         example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
     type: object
   auth.RefreshRequest:
     properties:
       refresh_token:
+        description: Текущий refresh token
         example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
         type: string
       user_id:
+        description: UUID пользователя
         example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
     required:
@@ -145,27 +176,34 @@ definitions:
   auth.RefreshResponse:
     properties:
       access_token:
+        description: JWT access token
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       refresh_token:
+        description: Refresh token для обновления access token
         example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
         type: string
     type: object
   auth.RegistrationRequest:
     properties:
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       first_name:
+        description: Имя пользователя
         example: Иван
         type: string
       last_name:
+        description: Фамилия пользователя
         example: Иванов
         type: string
       middle_name:
+        description: Отчество пользователя, если имеется
         example: Иванович
         type: string
       password:
+        description: Пароль пользователя, минимум 8 символов
         example: NFMpC9!fm;ARqoh
         minLength: 8
         type: string
@@ -178,23 +216,29 @@ definitions:
   auth.RegistrationRequestByAdmin:
     properties:
       class_id:
+        description: UUID класса пользователя
         example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
         type: string
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       first_name:
+        description: Имя пользователя
         example: Иван
         type: string
       last_name:
+        description: Фамилия пользователя
         example: Иванов
         type: string
       middle_name:
+        description: Отчество пользователя, если имеется
         example: Иванович
         type: string
       role:
         allOf:
         - $ref: '#/definitions/dto.UserRole'
+        description: Роль пользователя в системе
         enum:
         - student
         - teacher
@@ -202,6 +246,7 @@ definitions:
         - super_admin
         example: student
       school_id:
+        description: UUID школы пользователя
         example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
         type: string
     required:
@@ -213,38 +258,49 @@ definitions:
   auth.RegistrationResponse:
     properties:
       access_token:
+        description: JWT access token
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
       class_id:
+        description: UUID класса пользователя
         example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
         type: string
       created_at:
+        description: Дата создания пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       first_name:
+        description: Имя пользователя
         example: Иван
         type: string
       id:
+        description: UUID пользователя
         example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
       is_active:
+        description: Признак активности пользователя
         example: true
         type: boolean
       last_name:
+        description: Фамилия пользователя
         example: Иванов
         type: string
       middle_name:
+        description: Отчество пользователя, если имеется
         example: Иванович
         type: string
       refresh_token:
+        description: Refresh token для обновления access token
         example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
         type: string
       role:
         allOf:
         - $ref: '#/definitions/dto.UserRole'
+        description: Роль пользователя в системе
         enum:
         - student
         - teacher
@@ -252,9 +308,11 @@ definitions:
         - super_admin
         example: student
       school_id:
+        description: UUID школы пользователя
         example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
         type: string
       updated_at:
+        description: Дата последнего обновления пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
     required:
@@ -266,35 +324,45 @@ definitions:
   auth.RegistrationResponseByAdmin:
     properties:
       class_id:
+        description: UUID класса пользователя
         example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
         type: string
       created_at:
+        description: Дата создания пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
       email:
+        description: Email пользователя
         example: example@example.com
         type: string
       first_name:
+        description: Имя пользователя
         example: Иван
         type: string
       id:
+        description: UUID пользователя
         example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
         type: string
       is_active:
+        description: Признак активности пользователя
         example: true
         type: boolean
       last_name:
+        description: Фамилия пользователя
         example: Иванов
         type: string
       middle_name:
+        description: Отчество пользователя, если имеется
         example: Иванович
         type: string
       password:
+        description: Сгенерированный временный пароль пользователя
         example: NFMpC9!fm;ARqoh
         type: string
       role:
         allOf:
         - $ref: '#/definitions/dto.UserRole'
+        description: Роль пользователя в системе
         enum:
         - student
         - teacher
@@ -302,9 +370,11 @@ definitions:
         - super_admin
         example: student
       school_id:
+        description: UUID школы пользователя
         example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
         type: string
       updated_at:
+        description: Дата последнего обновления пользователя
         example: "2026-03-16T10:30:00Z"
         type: string
     required:
