@@ -120,11 +120,13 @@ func (m *mockAuthManager) RefreshTTL() time.Duration { return m.refreshTTL }
 // ── mockSessionCache ────────────────────────────────────────────────────────
 
 type mockSessionCache struct {
-	setVersionErr  error
-	setHashErr     error
-	delErr         error
-	versionCalled  bool
-	delCalled      bool
+	setVersionErr      error
+	setHashErr         error
+	delRefreshErr      error
+	delErr             error
+	versionCalled      bool
+	delRefreshCalled   bool
+	delCalled          bool
 }
 
 func (m *mockSessionCache) SetSessionVersion(_ context.Context, _ uuid.UUID, _ int, _ time.Duration) error {
@@ -134,6 +136,11 @@ func (m *mockSessionCache) SetSessionVersion(_ context.Context, _ uuid.UUID, _ i
 
 func (m *mockSessionCache) SetRefreshTokenHash(_ context.Context, _ uuid.UUID, _ string, _ time.Duration) error {
 	return m.setHashErr
+}
+
+func (m *mockSessionCache) DelRefreshTokenHash(_ context.Context, _ uuid.UUID) error {
+	m.delRefreshCalled = true
+	return m.delRefreshErr
 }
 
 func (m *mockSessionCache) DelSession(_ context.Context, _ uuid.UUID) error {
@@ -566,8 +573,8 @@ func TestLogoutAll_Success(t *testing.T) {
 	if !cache.versionCalled {
 		t.Fatal("LogoutAll() did not update cache version")
 	}
-	if !cache.delCalled {
-		t.Fatal("LogoutAll() did not clear session cache")
+	if !cache.delRefreshCalled {
+		t.Fatal("LogoutAll() did not clear refresh token cache")
 	}
 }
 
@@ -608,11 +615,13 @@ func TestRegistrationByAdmin_Success(t *testing.T) {
 		&mockSessionCache{},
 	)
 
+	schoolID := uuid.New()
 	user := &dto.User{
 		Email:     "admin-created@user.com",
 		LastName:  "Сидоров",
 		FirstName: "Сидор",
 		Role:      dto.RoleTeacher,
+		SchoolID:  &schoolID,
 	}
 
 	u, password, err := svc.RegistrationByAdmin(context.Background(), user)
@@ -653,6 +662,52 @@ func TestRegistrationByAdmin_EmailConflict(t *testing.T) {
 	}
 	if ae.Status != 409 {
 		t.Fatalf("RegistrationByAdmin() status = %d, want 409", ae.Status)
+	}
+}
+
+func TestRegistrationByAdmin_TeacherWithoutSchool(t *testing.T) {
+	svc := newTestService(
+		&mockUserRepository{},
+		&mockTokenRepository{},
+		defaultAuthManager(),
+		&mockSessionCache{},
+	)
+
+	user := &dto.User{Email: "teacher@no-school.com", LastName: "Без", FirstName: "Школы", Role: dto.RoleTeacher}
+
+	_, _, err := svc.RegistrationByAdmin(context.Background(), user)
+	if err == nil {
+		t.Fatal("RegistrationByAdmin() expected error for teacher without school")
+	}
+	var ae *appErr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("RegistrationByAdmin() error type = %T, want *AppError", err)
+	}
+	if ae.Status != 400 {
+		t.Fatalf("RegistrationByAdmin() status = %d, want 400", ae.Status)
+	}
+}
+
+func TestRegistrationByAdmin_SchoolAdminWithoutSchool(t *testing.T) {
+	svc := newTestService(
+		&mockUserRepository{},
+		&mockTokenRepository{},
+		defaultAuthManager(),
+		&mockSessionCache{},
+	)
+
+	user := &dto.User{Email: "admin@no-school.com", LastName: "Без", FirstName: "Школы", Role: dto.RoleSchoolAdmin}
+
+	_, _, err := svc.RegistrationByAdmin(context.Background(), user)
+	if err == nil {
+		t.Fatal("RegistrationByAdmin() expected error for school_admin without school")
+	}
+	var ae *appErr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("RegistrationByAdmin() error type = %T, want *AppError", err)
+	}
+	if ae.Status != 400 {
+		t.Fatalf("RegistrationByAdmin() status = %d, want 400", ae.Status)
 	}
 }
 

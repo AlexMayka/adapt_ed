@@ -1,7 +1,9 @@
 package sessions
 
 import (
+	appErr "backend/internal/errors"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -62,12 +64,9 @@ func TestGetSessionVersion_CacheMiss(t *testing.T) {
 	repo := NewSessionRepository(cache)
 	ctx := context.Background()
 
-	got, err := repo.GetSessionVersion(ctx, uuid.New())
-	if err != nil {
-		t.Fatalf("GetSessionVersion() unexpected error: %v", err)
-	}
-	if got != -1 {
-		t.Fatalf("GetSessionVersion() on miss = %d, want -1", got)
+	_, err := repo.GetSessionVersion(ctx, uuid.New())
+	if !errors.Is(err, appErr.ErrCacheMiss) {
+		t.Fatalf("GetSessionVersion() on miss error = %v, want ErrCacheMiss", err)
 	}
 }
 
@@ -105,6 +104,24 @@ func TestGetRefreshTokenHash_CacheMiss(t *testing.T) {
 	}
 }
 
+func TestDelRefreshTokenHash(t *testing.T) {
+	cache := newMockCache()
+	repo := NewSessionRepository(cache)
+	ctx := context.Background()
+	uid := uuid.New()
+
+	repo.SetRefreshTokenHash(ctx, uid, "hash", time.Minute)
+
+	if err := repo.DelRefreshTokenHash(ctx, uid); err != nil {
+		t.Fatalf("DelRefreshTokenHash() failed: %v", err)
+	}
+
+	tok, _ := repo.GetRefreshTokenHash(ctx, uid)
+	if tok != "" {
+		t.Fatalf("refresh token after Del = %q, want empty", tok)
+	}
+}
+
 func TestDelSession(t *testing.T) {
 	cache := newMockCache()
 	repo := NewSessionRepository(cache)
@@ -118,9 +135,9 @@ func TestDelSession(t *testing.T) {
 		t.Fatalf("DelSession() failed: %v", err)
 	}
 
-	ver, _ := repo.GetSessionVersion(ctx, uid)
-	if ver != -1 {
-		t.Fatalf("session version after Del = %d, want -1", ver)
+	_, err := repo.GetSessionVersion(ctx, uid)
+	if !errors.Is(err, appErr.ErrCacheMiss) {
+		t.Fatalf("session version after Del error = %v, want ErrCacheMiss", err)
 	}
 
 	tok, _ := repo.GetRefreshTokenHash(ctx, uid)

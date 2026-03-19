@@ -129,6 +129,7 @@ var (
 
 var (
 	ErrRedisConnectionFailed = errors.New("redis connection failed")
+	ErrCacheMiss             = errors.New("cache miss")
 )
 
 // ── MinIO errors ────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	appErr "backend/internal/errors"
 	"backend/internal/storage/interfaces"
 	"context"
 	"fmt"
@@ -33,14 +34,14 @@ func (r *SessionRepository) SetSessionVersion(ctx context.Context, userID uuid.U
 	return r.cache.Set(ctx, sessionVersionKey(userID), strconv.Itoa(version), ttl)
 }
 
-// GetSessionVersion возвращает кэшированную версию сессии. Возвращает -1 при cache miss.
+// GetSessionVersion возвращает кэшированную версию сессии. Возвращает ErrCacheMiss при отсутствии ключа.
 func (r *SessionRepository) GetSessionVersion(ctx context.Context, userID uuid.UUID) (int, error) {
 	val, err := r.cache.Get(ctx, sessionVersionKey(userID))
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 	if val == "" {
-		return -1, nil
+		return 0, appErr.ErrCacheMiss
 	}
 	return strconv.Atoi(val)
 }
@@ -55,7 +56,12 @@ func (r *SessionRepository) GetRefreshTokenHash(ctx context.Context, userID uuid
 	return r.cache.Get(ctx, refreshTokenKey(userID))
 }
 
-// DelSession удаляет кэш сессии пользователя (version + token).
+// DelRefreshTokenHash удаляет кэшированный хэш refresh token пользователя.
+func (r *SessionRepository) DelRefreshTokenHash(ctx context.Context, userID uuid.UUID) error {
+	return r.cache.Del(ctx, refreshTokenKey(userID))
+}
+
+// DelSession удаляет весь кэш сессии пользователя (version + token).
 func (r *SessionRepository) DelSession(ctx context.Context, userID uuid.UUID) error {
 	err1 := r.cache.Del(ctx, sessionVersionKey(userID))
 	err2 := r.cache.Del(ctx, refreshTokenKey(userID))

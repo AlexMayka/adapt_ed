@@ -34,5 +34,6 @@ type AuthManager interface {
 type SessionCache interface {
 	SetSessionVersion(ctx context.Context, userID uuid.UUID, version int, ttl time.Duration) error
 	SetRefreshTokenHash(ctx context.Context, userID uuid.UUID, tokenHash string, ttl time.Duration) error
+	DelRefreshTokenHash(ctx context.Context, userID uuid.UUID) error
 	DelSession(ctx context.Context, userID uuid.UUID) error
 }

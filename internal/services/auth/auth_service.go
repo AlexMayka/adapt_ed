@@ -243,8 +243,8 @@ func (s *AuthService) LogoutAll(ctx context.Context, userID uuid.UUID) error {
 		s.log.Warn("ошибка обновления кэша версии сессии", "err", err, "user_id", userID)
 	}
 
-	if err := s.sessionCache.DelSession(ctx, userID); err != nil {
-		s.log.Warn("ошибка очистки кэша сессии", "err", err, "user_id", userID)
+	if err := s.sessionCache.DelRefreshTokenHash(ctx, userID); err != nil {
+		s.log.Warn("ошибка очистки кэша refresh-токена", "err", err, "user_id", userID)
 	}
 
 	s.log.Info("все сессии пользователя отозваны", "user_id", userID, "new_version", newVersion)
@@ -253,6 +253,10 @@ func (s *AuthService) LogoutAll(ctx context.Context, userID uuid.UUID) error {
 
 // RegistrationByAdmin создаёт пользователя с указанной ролью и генерирует временный пароль.
 func (s *AuthService) RegistrationByAdmin(ctx context.Context, user *dto.User) (*dto.User, string, error) {
+	if (user.Role == dto.RoleTeacher || user.Role == dto.RoleSchoolAdmin) && user.SchoolID == nil {
+		return nil, "", appErr.NewAppError(http.StatusBadRequest, appErr.ErrCodeBadRequest, "для роли teacher и school_admin обязательна привязка к школе")
+	}
+
 	password, err := utils.GeneratePassword(16)
 	if err != nil {
 		s.log.Error("ошибка генерации пароля", "err", err)
