@@ -34,7 +34,7 @@ func toResponse(c *dto.Class) ClassResponse {
 
 // parseSchoolID извлекает school_id из URL и проверяет доступ school_admin.
 func parseSchoolID(c *gin.Context) (uuid.UUID, bool) {
-	schoolID, err := uuid.Parse(c.Param("school_id"))
+	schoolID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID школы"))
 		return uuid.Nil, false
@@ -80,7 +80,7 @@ func handleError(c *gin.Context, err error) {
 // @Failure      404 {object} dto.ErrorResponse "Класс не найден"
 // @Router       /schools/{school_id}/classes/{id} [get]
 func (h *ClassHandlers) GetClass(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := uuid.Parse(c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID класса"))
 		return
@@ -108,7 +108,7 @@ func (h *ClassHandlers) GetClass(c *gin.Context) {
 // @Success      200 {object} ListResponse
 // @Router       /schools/{school_id}/classes [get]
 func (h *ClassHandlers) ListClasses(c *gin.Context) {
-	schoolID, err := uuid.Parse(c.Param("school_id"))
+	schoolID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID школы"))
 		return
@@ -209,7 +209,7 @@ func (h *ClassHandlers) UpdateClass(c *gin.Context) {
 		return
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := uuid.Parse(c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID класса"))
 		return
@@ -258,7 +258,7 @@ func (h *ClassHandlers) DeleteClass(c *gin.Context) {
 		return
 	}
 
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := uuid.Parse(c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID класса"))
 		return
@@ -285,7 +285,7 @@ func (h *ClassHandlers) DeleteClass(c *gin.Context) {
 // @Failure      404 {object} dto.ErrorResponse "Удалённый класс не найден"
 // @Router       /schools/{school_id}/classes/{id}/restore [post]
 func (h *ClassHandlers) RestoreClass(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := uuid.Parse(c.Param("class_id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID класса"))
 		return

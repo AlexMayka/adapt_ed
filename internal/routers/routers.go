@@ -91,16 +91,22 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 		adminGroup.POST("/registration/admin", authH.RegistrationByAdmin)
 	}
 
-	// Сборка зависимостей школ
+	// Сборка зависимостей школ и классов
 	schoolRepo := repoSchools.NewSchoolRepository(deps.DB.Pool, deps.DB.QueryTimeout)
 	schoolService := schoolSvc.NewSchoolService(deps.Logger, schoolRepo)
 	schoolH := school.NewSchoolHandlers(deps.Logger, schoolService)
+
+	classRepo := repoClasses.NewClassRepository(deps.DB.Pool, deps.DB.QueryTimeout)
+	classService := classSvc.NewClassService(deps.Logger, classRepo)
+	classHandlers := classH.NewClassHandlers(deps.Logger, classService)
 
 	schoolGroup := r.Group("/schools")
 	schoolGroup.Use(middleware.Authorization(authManager))
 	{
 		schoolGroup.GET("", schoolH.ListSchools)
 		schoolGroup.GET("/:id", schoolH.GetSchool)
+		schoolGroup.GET("/:id/classes", classHandlers.ListClasses)
+		schoolGroup.GET("/:id/classes/:class_id", classHandlers.GetClass)
 	}
 
 	schoolAdminGroup := r.Group("/schools")
@@ -108,6 +114,9 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	schoolAdminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
 	{
 		schoolAdminGroup.PATCH("/:id", schoolH.UpdateSchool)
+		schoolAdminGroup.POST("/:id/classes", classHandlers.CreateClass)
+		schoolAdminGroup.PATCH("/:id/classes/:class_id", classHandlers.UpdateClass)
+		schoolAdminGroup.DELETE("/:id/classes/:class_id", classHandlers.DeleteClass)
 	}
 
 	schoolSuperGroup := r.Group("/schools")
@@ -117,34 +126,7 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 		schoolSuperGroup.POST("", schoolH.CreateSchool)
 		schoolSuperGroup.DELETE("/:id", schoolH.DeleteSchool)
 		schoolSuperGroup.POST("/:id/restore", schoolH.RestoreSchool)
-	}
-
-	// Сборка зависимостей классов
-	classRepo := repoClasses.NewClassRepository(deps.DB.Pool, deps.DB.QueryTimeout)
-	classService := classSvc.NewClassService(deps.Logger, classRepo)
-	classHandlers := classH.NewClassHandlers(deps.Logger, classService)
-
-	classGroup := r.Group("/schools/:school_id/classes")
-	classGroup.Use(middleware.Authorization(authManager))
-	{
-		classGroup.GET("", classHandlers.ListClasses)
-		classGroup.GET("/:id", classHandlers.GetClass)
-	}
-
-	classAdminGroup := r.Group("/schools/:school_id/classes")
-	classAdminGroup.Use(middleware.Authorization(authManager))
-	classAdminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
-	{
-		classAdminGroup.POST("", classHandlers.CreateClass)
-		classAdminGroup.PATCH("/:id", classHandlers.UpdateClass)
-		classAdminGroup.DELETE("/:id", classHandlers.DeleteClass)
-	}
-
-	classSuperGroup := r.Group("/schools/:school_id/classes")
-	classSuperGroup.Use(middleware.Authorization(authManager))
-	classSuperGroup.Use(middleware.RequireRole(dto.RoleSuperAdmin))
-	{
-		classSuperGroup.POST("/:id/restore", classHandlers.RestoreClass)
+		schoolSuperGroup.POST("/:id/classes/:class_id/restore", classHandlers.RestoreClass)
 	}
 
 	return r
