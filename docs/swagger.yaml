@@ -383,6 +383,104 @@ definitions:
     - last_name
     - role
     type: object
+  class.ClassID:
+    properties:
+      id:
+        description: UUID класса
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+    type: object
+  class.ClassResponse:
+    properties:
+      academic_year_end:
+        description: Дата окончания учебного года
+        example: "2026-08-31T00:00:00Z"
+        type: string
+      academic_year_start:
+        description: Дата начала учебного года
+        example: "2025-09-01T00:00:00Z"
+        type: string
+      created_at:
+        description: Дата создания записи
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      id:
+        description: UUID класса
+        example: 1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb
+        type: string
+      number_of_class:
+        description: Номер класса (5, 6, 7...)
+        example: 7
+        type: integer
+      school_id:
+        description: UUID школы
+        example: 3e1b8139-1f9d-458f-ac70-41f815c8b128
+        type: string
+      suffixes_of_class:
+        description: Суффикс класса (А, Б, В...)
+        example: А
+        type: string
+      updated_at:
+        description: Дата последнего обновления записи
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    required:
+    - number_of_class
+    - suffixes_of_class
+    type: object
+  class.CreateRequest:
+    properties:
+      academic_year_end:
+        description: Дата окончания учебного года
+        example: "2026-08-31T00:00:00Z"
+        type: string
+      academic_year_start:
+        description: Дата начала учебного года
+        example: "2025-09-01T00:00:00Z"
+        type: string
+      number_of_class:
+        description: Номер класса (5, 6, 7...)
+        example: 7
+        type: integer
+      suffixes_of_class:
+        description: Суффикс класса (А, Б, В...)
+        example: А
+        type: string
+    required:
+    - number_of_class
+    - suffixes_of_class
+    type: object
+  class.ListResponse:
+    properties:
+      classes:
+        description: Список классов
+        items:
+          $ref: '#/definitions/class.ClassResponse'
+        type: array
+      total:
+        description: Общее количество записей
+        example: 12
+        type: integer
+    type: object
+  class.UpdateRequest:
+    properties:
+      academic_year_end:
+        description: Дата окончания учебного года
+        example: "2026-08-31T00:00:00Z"
+        type: string
+      academic_year_start:
+        description: Дата начала учебного года
+        example: "2025-09-01T00:00:00Z"
+        type: string
+      number_of_class:
+        description: Номер класса
+        example: 7
+        type: integer
+      suffixes_of_class:
+        description: Суффикс класса
+        example: Б
+        type: string
+    type: object
   dto.ErrorResponse:
     properties:
       code:
@@ -930,6 +1028,227 @@ paths:
       summary: Восстановление школы
       tags:
       - schools
+  /schools/{school_id}/classes:
+    get:
+      description: Возвращает список классов школы с фильтрацией и пагинацией.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: school_id
+        type: string
+      - description: Фильтр по номеру класса
+        in: query
+        name: number_of_class
+        type: integer
+      - description: Количество записей (по умолчанию 20, макс 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/class.ListResponse'
+      security:
+      - BearerAuth: []
+      summary: Список классов школы
+      tags:
+      - classes
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новый класс в школе. Доступно super_admin и school_admin
+        своей школы.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: school_id
+        required: true
+        type: string
+      - description: Данные класса
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/class.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/class.ClassResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Класс с таким номером и суффиксом уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание класса
+      tags:
+      - classes
+  /schools/{school_id}/classes/{id}:
+    delete:
+      description: Мягкое удаление класса. Доступно super_admin и school_admin своей
+        школы.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: school_id
+        required: true
+        type: string
+      - description: UUID класса
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/class.ClassID'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Класс не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление класса
+      tags:
+      - classes
+    get:
+      description: Возвращает данные класса по ID.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: school_id
+        required: true
+        type: string
+      - description: UUID класса
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/class.ClassResponse'
+        "404":
+          description: Класс не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение класса
+      tags:
+      - classes
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные класса. Доступно super_admin и school_admin своей
+        школы.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: school_id
+        required: true
+        type: string
+      - description: UUID класса
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Обновляемые поля
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/class.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/class.ClassResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Класс не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Класс с таким номером и суффиксом уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление класса
+      tags:
+      - classes
+  /schools/{school_id}/classes/{id}/restore:
+    post:
+      description: Восстанавливает мягко удалённый класс. Доступно только super_admin.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: school_id
+        required: true
+        type: string
+      - description: UUID класса
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/class.ClassResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Удалённый класс не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Восстановление класса
+      tags:
+      - classes
 securityDefinitions:
   BearerAuth:
     description: 'Введите токен в формате: Bearer {access_token}'
@@ -945,3 +1264,6 @@ tags:
   name: auth
 - description: 'Управление школами: создание, обновление, удаление и поиск.'
   name: schools
+- description: 'Управление классами внутри школы: создание, обновление, удаление и
+    поиск.'
+  name: classes

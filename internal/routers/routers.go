@@ -5,15 +5,18 @@ import (
 	"backend/internal/config"
 	"backend/internal/dto"
 	logInf "backend/internal/logger/interfaces"
+	repoClasses "backend/internal/repositories/classes"
 	repoSchools "backend/internal/repositories/schools"
 	repoSessions "backend/internal/repositories/sessions"
 	repoTokens "backend/internal/repositories/tokens"
 	repoUsers "backend/internal/repositories/users"
 	"backend/internal/routers/handlers"
 	"backend/internal/routers/handlers/auth"
+	classH "backend/internal/routers/handlers/class"
 	"backend/internal/routers/handlers/school"
 	"backend/internal/routers/middleware"
 	authSvc "backend/internal/services/auth"
+	classSvc "backend/internal/services/class"
 	schoolSvc "backend/internal/services/school"
 	stgInf "backend/internal/storage/interfaces"
 	"backend/internal/storage/postgres"
@@ -114,6 +117,34 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 		schoolSuperGroup.POST("", schoolH.CreateSchool)
 		schoolSuperGroup.DELETE("/:id", schoolH.DeleteSchool)
 		schoolSuperGroup.POST("/:id/restore", schoolH.RestoreSchool)
+	}
+
+	// Сборка зависимостей классов
+	classRepo := repoClasses.NewClassRepository(deps.DB.Pool, deps.DB.QueryTimeout)
+	classService := classSvc.NewClassService(deps.Logger, classRepo)
+	classHandlers := classH.NewClassHandlers(deps.Logger, classService)
+
+	classGroup := r.Group("/schools/:school_id/classes")
+	classGroup.Use(middleware.Authorization(authManager))
+	{
+		classGroup.GET("", classHandlers.ListClasses)
+		classGroup.GET("/:id", classHandlers.GetClass)
+	}
+
+	classAdminGroup := r.Group("/schools/:school_id/classes")
+	classAdminGroup.Use(middleware.Authorization(authManager))
+	classAdminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
+	{
+		classAdminGroup.POST("", classHandlers.CreateClass)
+		classAdminGroup.PATCH("/:id", classHandlers.UpdateClass)
+		classAdminGroup.DELETE("/:id", classHandlers.DeleteClass)
+	}
+
+	classSuperGroup := r.Group("/schools/:school_id/classes")
+	classSuperGroup.Use(middleware.Authorization(authManager))
+	classSuperGroup.Use(middleware.RequireRole(dto.RoleSuperAdmin))
+	{
+		classSuperGroup.POST("/:id/restore", classHandlers.RestoreClass)
 	}
 
 	return r

@@ -75,6 +75,8 @@ func setSwagger(appName, host, version, envType, instance string) {
 // @tag.description Эндпоинты для работы с авторизацией пользователей
 // @tag.name schools
 // @tag.description Управление школами: создание, обновление, удаление и поиск.
+// @tag.name classes
+// @tag.description Управление классами внутри школы: создание, обновление, удаление и поиск.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {

@@ -674,6 +674,345 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/schools/{school_id}/classes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список классов школы с фильтрацией и пагинацией.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Список классов школы",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "school_id",
+                        "in": "path"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Фильтр по номеру класса",
+                        "name": "number_of_class",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество записей (по умолчанию 20, макс 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение (по умолчанию 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/class.ListResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создаёт новый класс в школе. Доступно super_admin и school_admin своей школы.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Создание класса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "school_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные класса",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/class.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/class.ClassResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Класс с таким номером и суффиксом уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schools/{school_id}/classes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает данные класса по ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Получение класса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "school_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID класса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/class.ClassResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Класс не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Мягкое удаление класса. Доступно super_admin и school_admin своей школы.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Удаление класса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "school_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID класса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/class.ClassID"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Класс не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет данные класса. Доступно super_admin и school_admin своей школы.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Обновление класса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "school_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID класса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Обновляемые поля",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/class.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/class.ClassResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Класс не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Класс с таким номером и суффиксом уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schools/{school_id}/classes/{id}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Восстанавливает мягко удалённый класс. Доступно только super_admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "classes"
+                ],
+                "summary": "Восстановление класса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "school_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID класса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/class.ClassResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Удалённый класс не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1181,6 +1520,136 @@ const docTemplate = `{
                 }
             }
         },
+        "class.ClassID": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "UUID класса",
+                    "type": "string",
+                    "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
+                }
+            }
+        },
+        "class.ClassResponse": {
+            "type": "object",
+            "required": [
+                "number_of_class",
+                "suffixes_of_class"
+            ],
+            "properties": {
+                "academic_year_end": {
+                    "description": "Дата окончания учебного года",
+                    "type": "string",
+                    "example": "2026-08-31T00:00:00Z"
+                },
+                "academic_year_start": {
+                    "description": "Дата начала учебного года",
+                    "type": "string",
+                    "example": "2025-09-01T00:00:00Z"
+                },
+                "created_at": {
+                    "description": "Дата создания записи",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                },
+                "id": {
+                    "description": "UUID класса",
+                    "type": "string",
+                    "example": "1db34ac1-23f1-4b47-82e3-9e8ad16ee1fb"
+                },
+                "number_of_class": {
+                    "description": "Номер класса (5, 6, 7...)",
+                    "type": "integer",
+                    "example": 7
+                },
+                "school_id": {
+                    "description": "UUID школы",
+                    "type": "string",
+                    "example": "3e1b8139-1f9d-458f-ac70-41f815c8b128"
+                },
+                "suffixes_of_class": {
+                    "description": "Суффикс класса (А, Б, В...)",
+                    "type": "string",
+                    "example": "А"
+                },
+                "updated_at": {
+                    "description": "Дата последнего обновления записи",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                }
+            }
+        },
+        "class.CreateRequest": {
+            "type": "object",
+            "required": [
+                "number_of_class",
+                "suffixes_of_class"
+            ],
+            "properties": {
+                "academic_year_end": {
+                    "description": "Дата окончания учебного года",
+                    "type": "string",
+                    "example": "2026-08-31T00:00:00Z"
+                },
+                "academic_year_start": {
+                    "description": "Дата начала учебного года",
+                    "type": "string",
+                    "example": "2025-09-01T00:00:00Z"
+                },
+                "number_of_class": {
+                    "description": "Номер класса (5, 6, 7...)",
+                    "type": "integer",
+                    "example": 7
+                },
+                "suffixes_of_class": {
+                    "description": "Суффикс класса (А, Б, В...)",
+                    "type": "string",
+                    "example": "А"
+                }
+            }
+        },
+        "class.ListResponse": {
+            "type": "object",
+            "properties": {
+                "classes": {
+                    "description": "Список классов",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/class.ClassResponse"
+                    }
+                },
+                "total": {
+                    "description": "Общее количество записей",
+                    "type": "integer",
+                    "example": 12
+                }
+            }
+        },
+        "class.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "academic_year_end": {
+                    "description": "Дата окончания учебного года",
+                    "type": "string",
+                    "example": "2026-08-31T00:00:00Z"
+                },
+                "academic_year_start": {
+                    "description": "Дата начала учебного года",
+                    "type": "string",
+                    "example": "2025-09-01T00:00:00Z"
+                },
+                "number_of_class": {
+                    "description": "Номер класса",
+                    "type": "integer",
+                    "example": 7
+                },
+                "suffixes_of_class": {
+                    "description": "Суффикс класса",
+                    "type": "string",
+                    "example": "Б"
+                }
+            }
+        },
         "dto.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -1357,6 +1826,10 @@ const docTemplate = `{
         {
             "description": "Управление школами: создание, обновление, удаление и поиск.",
             "name": "schools"
+        },
+        {
+            "description": "Управление классами внутри школы: создание, обновление, удаление и поиск.",
+            "name": "classes"
         }
     ]
 }`

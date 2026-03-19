@@ -74,6 +74,13 @@ var (
 	ErrSchoolNotFound = errors.New("SCHOOL_NOT_FOUND")
 )
 
+// ── Class errors ───────────────────────────────────────────────────────────
+
+var (
+	ErrClassNotFound      = errors.New("CLASS_NOT_FOUND")
+	ErrClassAlreadyExists = errors.New("CLASS_ALREADY_EXISTS")
+)
+
 // ── App lifecycle errors ────────────────────────────────────────────────────
 
 var (
