@@ -31,6 +31,10 @@ type AuthManager interface {
 	RefreshTTL() time.Duration
 }
 
+type ProfileCreator interface {
+	CreateDefault(ctx context.Context, userID uuid.UUID) (*dto.StudentProfile, error)
+}
+
 type SessionCache interface {
 	SetSessionVersion(ctx context.Context, userID uuid.UUID, version int, ttl time.Duration) error
 	SetRefreshTokenHash(ctx context.Context, userID uuid.UUID, tokenHash string, ttl time.Duration) error

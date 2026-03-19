@@ -7,6 +7,7 @@ import (
 	logInf "backend/internal/logger/interfaces"
 	repoClasses "backend/internal/repositories/classes"
 	repoInterests "backend/internal/repositories/interests"
+	repoProfiles "backend/internal/repositories/profiles"
 	repoSchools "backend/internal/repositories/schools"
 	repoSessions "backend/internal/repositories/sessions"
 	repoTokens "backend/internal/repositories/tokens"
@@ -15,12 +16,14 @@ import (
 	"backend/internal/routers/handlers/auth"
 	classH "backend/internal/routers/handlers/class"
 	interestH "backend/internal/routers/handlers/interest"
+	profileH "backend/internal/routers/handlers/profile"
 	"backend/internal/routers/handlers/school"
 	userH "backend/internal/routers/handlers/user"
 	"backend/internal/routers/middleware"
 	authSvc "backend/internal/services/auth"
 	classSvc "backend/internal/services/class"
 	interestSvc "backend/internal/services/interest"
+	profileSvc "backend/internal/services/profile"
 	schoolSvc "backend/internal/services/school"
 	userSvc "backend/internal/services/user"
 	stgInf "backend/internal/storage/interfaces"
@@ -71,7 +74,9 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	tokenRepo := repoTokens.NewTokenRepository(deps.DB.Pool, deps.DB.QueryTimeout)
 	sessionCache := repoSessions.NewSessionRepository(deps.Cache)
 	authManager := authPkg.NewAuthManager(deps.Logger, deps.Config.App.Secret, deps.Config.Auth.AccessTTL, deps.Config.Auth.RefreshTTL, sessionCache, userRepo)
-	authService := authSvc.NewAuthService(deps.Logger, userRepo, tokenRepo, authManager, sessionCache)
+	profileRepo := repoProfiles.NewProfileRepository(deps.DB.Pool, deps.DB.QueryTimeout)
+	profileService := profileSvc.NewProfileService(deps.Logger, profileRepo)
+	authService := authSvc.NewAuthService(deps.Logger, userRepo, tokenRepo, authManager, sessionCache, profileService)
 
 	authH := auth.NewAuthHandlers(deps.Logger, authService)
 	authGroup := r.Group("/auth")
@@ -144,6 +149,10 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	{
 		userSelfGroup.PATCH("/me", userHandlers.UpdateProfile)
 		userSelfGroup.POST("/me/password", userHandlers.ChangePassword)
+
+		profileHandlers := profileH.NewProfileHandlers(deps.Logger, profileService)
+		userSelfGroup.GET("/me/profile", profileHandlers.GetMyProfile)
+		userSelfGroup.PATCH("/me/profile", profileHandlers.UpdateMyProfile)
 	}
 
 	// Чтение пользователей (admin)

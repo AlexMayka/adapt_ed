@@ -148,6 +148,16 @@ func (m *mockSessionCache) DelSession(_ context.Context, _ uuid.UUID) error {
 	return m.delErr
 }
 
+// ── mockProfileCreator ────────────────────────────────────────────────────
+
+type mockProfileCreator struct {
+	err error
+}
+
+func (m *mockProfileCreator) CreateDefault(_ context.Context, _ uuid.UUID) (*dto.StudentProfile, error) {
+	return &dto.StudentProfile{}, m.err
+}
+
 // ── Хелперы ─────────────────────────────────────────────────────────────────
 
 func hashPassword(password string) string {
@@ -188,7 +198,7 @@ func newTestService(
 	manager *mockAuthManager,
 	cache *mockSessionCache,
 ) *AuthService {
-	return NewAuthService(&mockLogger{}, userRep, tokenRep, manager, cache)
+	return NewAuthService(&mockLogger{}, userRep, tokenRep, manager, cache, &mockProfileCreator{})
 }
 
 // ── Login ───────────────────────────────────────────────────────────────────

@@ -81,6 +81,12 @@ var (
 	ErrClassAlreadyExists = errors.New("CLASS_ALREADY_EXISTS")
 )
 
+// ── Profile errors ─────────────────────────────────────────────────────────
+
+var (
+	ErrProfileNotFound = errors.New("PROFILE_NOT_FOUND")
+)
+
 // ── Interest errors ────────────────────────────────────────────────────────
 
 var (

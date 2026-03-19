@@ -481,6 +481,16 @@ definitions:
         example: Б
         type: string
     type: object
+  dto.DifficultyLevel:
+    enum:
+    - simple
+    - medium
+    - advanced
+    type: string
+    x-enum-varnames:
+    - LevelSimple
+    - LevelMedium
+    - LevelAdvanced
   dto.ErrorResponse:
     properties:
       code:
@@ -597,6 +607,56 @@ definitions:
         description: Количество верифицированных интересов
         example: 3
         type: integer
+    type: object
+  profile.ProfileResponse:
+    properties:
+      created_at:
+        description: Дата создания версии
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      default_level:
+        allOf:
+        - $ref: '#/definitions/dto.DifficultyLevel'
+        description: Уровень сложности по умолчанию
+        enum:
+        - simple
+        - medium
+        - advanced
+        example: simple
+      id:
+        description: UUID профиля
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        type: string
+      interests:
+        description: Список UUID интересов
+        items:
+          type: string
+        type: array
+      user_id:
+        description: UUID пользователя
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      version:
+        description: Версия профиля
+        example: 1
+        type: integer
+    type: object
+  profile.UpdateProfileRequest:
+    properties:
+      default_level:
+        allOf:
+        - $ref: '#/definitions/dto.DifficultyLevel'
+        description: Уровень сложности
+        enum:
+        - simple
+        - medium
+        - advanced
+        example: medium
+      interests:
+        description: Список UUID интересов
+        items:
+          type: string
+        type: array
     type: object
   school.CreateRequest:
     properties:
@@ -1900,6 +1960,57 @@ paths:
       summary: Смена пароля
       tags:
       - users
+  /users/me/profile:
+    get:
+      description: Возвращает текущий активный профиль ученика.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/profile.ProfileResponse'
+        "404":
+          description: Профиль не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Профиль ученика
+      tags:
+      - profile
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет уровень сложности и/или интересы. Создаёт новую версию
+        профиля.
+      parameters:
+      - description: Обновляемые поля
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/profile.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/profile.ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Профиль не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление профиля ученика
+      tags:
+      - profile
 securityDefinitions:
   BearerAuth:
     description: 'Введите токен в формате: Bearer {access_token}'
@@ -1922,3 +2033,5 @@ tags:
   name: users
 - description: Справочник интересов учеников для адаптивного обучения.
   name: interests
+- description: 'Профиль ученика: уровень сложности и интересы.'
+  name: profile

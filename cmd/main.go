@@ -81,6 +81,8 @@ func setSwagger(appName, host, version, envType, instance string) {
 // @tag.description Управление пользователями: профиль, пароль, список, активация, удаление.
 // @tag.name interests
 // @tag.description Справочник интересов учеников для адаптивного обучения.
+// @tag.name profile
+// @tag.description Профиль ученика: уровень сложности и интересы.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {

@@ -15,11 +15,12 @@ import (
 
 // AuthService реализует бизнес-логику авторизации.
 type AuthService struct {
-	log          interfaces.Logger
-	authManager  AuthManager
-	userRep      UserRepository
-	tokenRep     TokenRepository
-	sessionCache SessionCache
+	log            interfaces.Logger
+	authManager    AuthManager
+	userRep        UserRepository
+	tokenRep       TokenRepository
+	sessionCache   SessionCache
+	profileCreator ProfileCreator
 }
 
 // NewAuthService создаёт сервис авторизации.
@@ -29,13 +30,15 @@ func NewAuthService(
 	tokenRep TokenRepository,
 	manager AuthManager,
 	sessionCache SessionCache,
+	profileCreator ProfileCreator,
 ) *AuthService {
 	return &AuthService{
-		log:          log,
-		userRep:      userRep,
-		tokenRep:     tokenRep,
-		authManager:  manager,
-		sessionCache: sessionCache,
+		log:            log,
+		userRep:        userRep,
+		tokenRep:       tokenRep,
+		authManager:    manager,
+		sessionCache:   sessionCache,
+		profileCreator: profileCreator,
 	}
 }
 
@@ -105,6 +108,13 @@ func (s *AuthService) Registration(ctx context.Context, user *dto.User, password
 	if err != nil {
 		s.log.Error("ошибка создания пользователя", "err", err)
 		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка при создании пользователя")
+	}
+
+	// Автосоздание профиля для студентов
+	if user.Role == dto.RoleStudent {
+		if _, err := s.profileCreator.CreateDefault(ctx, user.ID); err != nil {
+			s.log.Warn("ошибка создания профиля ученика", "err", err, "user_id", user.ID)
+		}
 	}
 
 	tokens, err := s.issueTokens(ctx, user.ID, user.SchoolID, user.SessionVersion, user.Role, userAgent, ip)
@@ -295,6 +305,13 @@ func (s *AuthService) RegistrationByAdmin(ctx context.Context, user *dto.User) (
 	if err != nil {
 		s.log.Error("ошибка создания пользователя", "err", err)
 		return nil, "", appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка создания пользователя")
+	}
+
+	// Автосоздание профиля для студентов
+	if user.Role == dto.RoleStudent {
+		if _, err := s.profileCreator.CreateDefault(ctx, user.ID); err != nil {
+			s.log.Warn("ошибка создания профиля ученика", "err", err, "user_id", user.ID)
+		}
 	}
 
 	return userDB, password, nil

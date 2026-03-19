@@ -1423,6 +1423,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/me/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает текущий активный профиль ученика.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Профиль ученика",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/profile.ProfileResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Профиль не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет уровень сложности и/или интересы. Создаёт новую версию профиля.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление профиля ученика",
+                "parameters": [
+                    {
+                        "description": "Обновляемые поля",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/profile.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/profile.ProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Профиль не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}": {
             "get": {
                 "security": [
@@ -2306,6 +2386,19 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.DifficultyLevel": {
+            "type": "string",
+            "enum": [
+                "simple",
+                "medium",
+                "advanced"
+            ],
+            "x-enum-varnames": [
+                "LevelSimple",
+                "LevelMedium",
+                "LevelAdvanced"
+            ]
+        },
         "dto.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -2466,6 +2559,78 @@ const docTemplate = `{
                     "description": "Количество верифицированных интересов",
                     "type": "integer",
                     "example": 3
+                }
+            }
+        },
+        "profile.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Дата создания версии",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                },
+                "default_level": {
+                    "description": "Уровень сложности по умолчанию",
+                    "enum": [
+                        "simple",
+                        "medium",
+                        "advanced"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.DifficultyLevel"
+                        }
+                    ],
+                    "example": "simple"
+                },
+                "id": {
+                    "description": "UUID профиля",
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                },
+                "interests": {
+                    "description": "Список UUID интересов",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
+                    "description": "UUID пользователя",
+                    "type": "string",
+                    "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
+                },
+                "version": {
+                    "description": "Версия профиля",
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "profile.UpdateProfileRequest": {
+            "type": "object",
+            "properties": {
+                "default_level": {
+                    "description": "Уровень сложности",
+                    "enum": [
+                        "simple",
+                        "medium",
+                        "advanced"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.DifficultyLevel"
+                        }
+                    ],
+                    "example": "medium"
+                },
+                "interests": {
+                    "description": "Список UUID интересов",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2809,6 +2974,10 @@ const docTemplate = `{
         {
             "description": "Справочник интересов учеников для адаптивного обучения.",
             "name": "interests"
+        },
+        {
+            "description": "Профиль ученика: уровень сложности и интересы.",
+            "name": "profile"
         }
     ]
 }`
