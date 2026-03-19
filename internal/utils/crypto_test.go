@@ -46,3 +46,41 @@ func TestCheckValuesHash_InvalidHash(t *testing.T) {
 		t.Fatal("CheckValuesHash() returned true for invalid hash")
 	}
 }
+
+// ── GeneratePassword ────────────────────────────────────────────────────────
+
+func TestGeneratePassword_Length(t *testing.T) {
+	for _, length := range []int{8, 16, 32} {
+		password, err := GeneratePassword(length)
+		if err != nil {
+			t.Fatalf("GeneratePassword(%d) error: %v", length, err)
+		}
+		if len(password) != length {
+			t.Fatalf("GeneratePassword(%d) len = %d", length, len(password))
+		}
+	}
+}
+
+func TestGeneratePassword_Unique(t *testing.T) {
+	p1, _ := GeneratePassword(16)
+	p2, _ := GeneratePassword(16)
+	if p1 == p2 {
+		t.Fatal("GeneratePassword() returned identical passwords")
+	}
+}
+
+func TestGeneratePassword_ValidChars(t *testing.T) {
+	password, _ := GeneratePassword(100)
+	for _, ch := range password {
+		found := false
+		for _, valid := range passwordChars {
+			if ch == valid {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("GeneratePassword() produced invalid char: %q", ch)
+		}
+	}
+}

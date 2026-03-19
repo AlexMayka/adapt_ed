@@ -119,7 +119,8 @@ type LoginResponse struct {
 
 // RefreshRequest входные данные для обновления токенов.
 type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required" example:"b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234" description:"Текущий refresh token"`
+	UserID       uuid.UUID `json:"user_id" binding:"required" example:"10cb44c1-18f7-4a3e-b0bd-5d2609619d65" description:"UUID пользователя"`
+	RefreshToken string    `json:"refresh_token" binding:"required" example:"b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234" description:"Текущий refresh token"`
 }
 
 // RefreshResponse выходные данные с новой парой токенов.

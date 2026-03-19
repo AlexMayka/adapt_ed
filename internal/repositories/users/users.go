@@ -34,7 +34,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dto
 		       last_name, first_name, middle_name, avatar_key,
 		       session_version, is_active, created_at, updated_at, deleted_at
 		FROM users
-		WHERE email = $1 AND deleted_at IS NULL AND is_active IS TRUE
+		WHERE email = $1
 	`
 
 	var user dto.User
@@ -164,4 +164,69 @@ func (r *UserRepository) GetVersionToken(ctx context.Context, user uuid.UUID) (i
 	}
 
 	return sessionVersion, nil
+}
+
+// IncrementSessionVersion атомарно увеличивает версию сессии и возвращает новое значение.
+func (r *UserRepository) IncrementSessionVersion(ctx context.Context, userID uuid.UUID) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	query := `
+		UPDATE users
+		SET session_version = session_version + 1
+		WHERE id = $1
+		RETURNING session_version
+	`
+
+	var version int
+	err := r.pool.QueryRow(ctx, query, userID).Scan(&version)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, appErr.ErrUserNotFound
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return version, nil
+}
+
+func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	query := `
+		SELECT id, role, class_id, school_id, email, password_hash,
+		       last_name, first_name, middle_name, avatar_key,
+		       session_version, is_active, created_at, updated_at, deleted_at
+		FROM users
+		WHERE id = $1
+	`
+
+	var user dto.User
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Role,
+		&user.ClassID,
+		&user.SchoolID,
+		&user.Email,
+		&user.PasswordHash,
+		&user.LastName,
+		&user.FirstName,
+		&user.MiddleName,
+		&user.AvatarKey,
+		&user.SessionVersion,
+		&user.IsActive,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&user.DeletedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, appErr.ErrUserNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

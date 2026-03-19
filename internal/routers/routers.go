@@ -3,6 +3,7 @@ package routers
 import (
 	authPkg "backend/internal/auth"
 	"backend/internal/config"
+	"backend/internal/dto"
 	logInf "backend/internal/logger/interfaces"
 	repoSessions "backend/internal/repositories/sessions"
 	repoTokens "backend/internal/repositories/tokens"
@@ -61,17 +62,27 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	authManager := authPkg.NewAuthManager(deps.Logger, deps.Config.App.Secret, deps.Config.Auth.AccessTTL, deps.Config.Auth.RefreshTTL, sessionCache, userRepo)
 	authService := authSvc.NewAuthService(deps.Logger, userRepo, tokenRepo, authManager, sessionCache)
 
-	// Auth endpoints (публичные — без middleware авторизации)
 	authH := auth.NewAuthHandlers(deps.Logger, authService)
 	authGroup := r.Group("/auth")
 	{
 		authGroup.POST("/registration", authH.Registration)
-		authGroup.POST("/registration/admin", authH.RegistrationByAdmin)
 		authGroup.POST("/login", authH.Login)
-		authGroup.GET("/me", authH.GetMe)
 		authGroup.POST("/refresh", authH.Refresh)
-		authGroup.POST("/logout", authH.Logout)
-		authGroup.POST("/logout-all", authH.LogoutAll)
+	}
+
+	authMidGroup := r.Group("/auth")
+	authMidGroup.Use(middleware.Authorization(authManager))
+	{
+		authMidGroup.GET("/me", authH.GetMe)
+		authMidGroup.POST("/logout", authH.Logout)
+		authMidGroup.POST("/logout-all", authH.LogoutAll)
+	}
+
+	adminGroup := r.Group("/auth")
+	adminGroup.Use(middleware.Authorization(authManager))
+	adminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
+	{
+		adminGroup.POST("/registration/admin", authH.RegistrationByAdmin)
 	}
 
 	return r

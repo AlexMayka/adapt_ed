@@ -64,6 +64,11 @@ func setSwagger(appName, host, version, envType, instance string) {
 // @description API description
 // @BasePath /
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Введите токен в формате: Bearer {access_token}
+
 // @tag.name infra
 // @tag.description Служебные эндпоинты приложения: доступность, готовность и метрики мониторинга.
 // @tag.name auth

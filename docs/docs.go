@@ -113,10 +113,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Инвалидирует все refresh token текущего пользователя.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Инвалидирует все refresh token текущего пользователя и увеличивает версию сессии.",
                 "produces": [
                     "application/json"
                 ],
@@ -173,7 +170,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Принимает refresh token и возвращает новую пару access + refresh.",
+                "description": "Принимает refresh token и user_id, возвращает новую пару access + refresh.",
                 "consumes": [
                     "application/json"
                 ],
@@ -186,7 +183,7 @@ const docTemplate = `{
                 "summary": "Обновление токенов",
                 "parameters": [
                     {
-                        "description": "Refresh token",
+                        "description": "Refresh token и ID пользователя",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -265,7 +262,12 @@ const docTemplate = `{
         },
         "/auth/registration/admin": {
             "post": {
-                "description": "Создаёт пользователя с указанной ролью и генерирует временный пароль.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создаёт пользователя с указанной ролью и генерирует временный пароль. Для school_admin school_id подставляется автоматически из токена.",
                 "consumes": [
                     "application/json"
                 ],
@@ -567,12 +569,17 @@ const docTemplate = `{
         "auth.RefreshRequest": {
             "type": "object",
             "required": [
-                "refresh_token"
+                "refresh_token",
+                "user_id"
             ],
             "properties": {
                 "refresh_token": {
                     "type": "string",
                     "example": "b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
                 }
             }
         },
@@ -861,6 +868,14 @@ const docTemplate = `{
                     "example": "ready"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Введите токен в формате: Bearer {access_token}",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     },
     "tags": [

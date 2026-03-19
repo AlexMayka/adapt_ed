@@ -7,6 +7,7 @@ import (
 	"backend/internal/utils"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"net/http"
 )
 
@@ -91,10 +92,11 @@ func (h *AuthHandlers) Registration(c *gin.Context) {
 
 // RegistrationByAdmin godoc
 // @Summary      Создание пользователя админом
-// @Description  Создаёт пользователя с указанной ролью и генерирует временный пароль.
+// @Description  Создаёт пользователя с указанной ролью и генерирует временный пароль. Для school_admin school_id подставляется автоматически из токена.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        body body RegistrationRequestByAdmin true "Данные нового пользователя"
 // @Success      201 {object} RegistrationResponseByAdmin
 // @Failure      400 {object} dto.ErrorResponse
@@ -102,7 +104,75 @@ func (h *AuthHandlers) Registration(c *gin.Context) {
 // @Failure      409 {object} dto.ErrorResponse "Email уже зарегистрирован"
 // @Router       /auth/registration/admin [post]
 func (h *AuthHandlers) RegistrationByAdmin(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, dto.NewErrorResponse(c, appErr.ErrCodeNotImplemented, "not implemented"))
+	var req RegistrationRequestByAdmin
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, err.Error()))
+		return
+	}
+
+	roleVal, _ := c.Get(dto.CtxRole)
+	callerRole, _ := roleVal.(dto.UserRole)
+
+	var schoolID *uuid.UUID
+
+	switch callerRole {
+	case dto.RoleSchoolAdmin:
+		if val, ok := c.Get(dto.CtxSchoolID); ok {
+			if sid, ok := val.(uuid.UUID); ok {
+				schoolID = &sid
+			}
+		}
+		if schoolID == nil {
+			c.JSON(http.StatusForbidden, dto.NewErrorResponse(c, appErr.ErrCodeForbidden, "у администратора школы не указана школа"))
+			return
+		}
+	case dto.RoleSuperAdmin:
+		schoolID = req.SchoolID
+	}
+
+	user := &dto.User{
+		Email:      req.Email,
+		LastName:   req.LastName,
+		FirstName:  req.FirstName,
+		MiddleName: req.MiddleName,
+		ClassID:    req.ClassID,
+		SchoolID:   schoolID,
+		Role:       req.Role.Role,
+	}
+
+	userDB, password, err := h.service.RegistrationByAdmin(c, user)
+	if err != nil {
+		if ae, ok := appErr.AsAppError(err); ok {
+			c.JSON(ae.Status, dto.NewErrorResponse(c, ae.Code, ae.Message))
+		} else {
+			c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, err.Error()))
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, RegistrationResponseByAdmin{
+		UserID: UserID{ID: userDB.ID},
+		UserBase: UserBase{
+			AuthEmail: AuthEmail{Email: userDB.Email},
+			Education: Education{
+				ClassID:  userDB.ClassID,
+				SchoolID: userDB.SchoolID,
+			},
+			FIO: FIO{
+				LastName:   userDB.LastName,
+				FirstName:  userDB.FirstName,
+				MiddleName: userDB.MiddleName,
+			},
+		},
+		Role:              Role{Role: userDB.Role},
+		GeneratedPassword: GeneratedPassword{Password: password},
+		UserMeta: UserMeta{
+			IsActive:  userDB.IsActive,
+			CreatedAt: userDB.CreatedAt,
+			UpdatedAt: userDB.UpdatedAt,
+		},
+	})
 }
 
 // Login          godoc
@@ -171,22 +241,88 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 // @Failure      401 {object} dto.ErrorResponse "Не авторизован"
 // @Router       /auth/me [get]
 func (h *AuthHandlers) GetMe(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, dto.NewErrorResponse(c, appErr.ErrCodeNotImplemented, "not implemented"))
+	val, ok := c.Get(dto.CtxUserID)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.NewErrorResponse(c, appErr.ErrJWTInvalid, "идентификатор пользователя не найден в контексте"))
+		return
+	}
+
+	userID, ok := val.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, "некорректный тип идентификатора пользователя"))
+		return
+	}
+
+	user, err := h.service.GetMe(c, userID)
+
+	if err != nil {
+		if ae, ok := appErr.AsAppError(err); ok {
+			c.JSON(ae.Status, dto.NewErrorResponse(c, ae.Code, ae.Message))
+		} else {
+			c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, err.Error()))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, GetMeResponse{
+		UserID: UserID{ID: user.ID},
+		UserBase: UserBase{
+			AuthEmail: AuthEmail{Email: user.Email},
+			Education: Education{
+				ClassID:  user.ClassID,
+				SchoolID: user.SchoolID,
+			},
+			FIO: FIO{
+				LastName:   user.LastName,
+				FirstName:  user.FirstName,
+				MiddleName: user.MiddleName,
+			},
+		},
+		UserMeta: UserMeta{
+			IsActive:  user.IsActive,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		},
+		Role:   Role{Role: user.Role},
+		Avatar: Avatar{AvatarKey: user.AvatarKey},
+	})
 }
 
 // Refresh        godoc
 // @Summary      Обновление токенов
-// @Description  Принимает refresh token и возвращает новую пару access + refresh.
+// @Description  Принимает refresh token и user_id, возвращает новую пару access + refresh.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body body RefreshRequest true "Refresh token"
+// @Param        body body RefreshRequest true "Refresh token и ID пользователя"
 // @Success      200 {object} RefreshResponse
 // @Failure      400 {object} dto.ErrorResponse
 // @Failure      401 {object} dto.ErrorResponse "Невалидный или истёкший refresh token"
 // @Router       /auth/refresh [post]
 func (h *AuthHandlers) Refresh(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, dto.NewErrorResponse(c, appErr.ErrCodeNotImplemented, "not implemented"))
+	var req RefreshRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, err.Error()))
+		return
+	}
+
+	tokens, err := h.service.Refresh(c, req.UserID, req.RefreshToken, c.GetHeader("User-Agent"), c.ClientIP())
+	if err != nil {
+		if ae, ok := appErr.AsAppError(err); ok {
+			c.JSON(ae.Status, dto.NewErrorResponse(c, ae.Code, ae.Message))
+		} else {
+			c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, err.Error()))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, RefreshResponse{
+		AuthParamResponse: AuthParamResponse{
+			AccessToken:  tokens.AccessToken,
+			RefreshToken: tokens.RefreshToken,
+		},
+	})
 }
 
 // Logout         godoc
@@ -201,19 +337,70 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 // @Failure      401 {object} dto.ErrorResponse "Не авторизован"
 // @Router       /auth/logout [post]
 func (h *AuthHandlers) Logout(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, dto.NewErrorResponse(c, appErr.ErrCodeNotImplemented, "not implemented"))
+	val, ok := c.Get(dto.CtxUserID)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.NewErrorResponse(c, appErr.ErrCodeUnauthenticated, "идентификатор пользователя не найден в контексте"))
+		return
+	}
+
+	userID, ok := val.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, "некорректный тип идентификатора пользователя"))
+		return
+	}
+
+	var req LogoutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, err.Error()))
+		return
+	}
+
+	if err := h.service.Logout(c, userID, req.RefreshToken); err != nil {
+		if ae, ok := appErr.AsAppError(err); ok {
+			c.JSON(ae.Status, dto.NewErrorResponse(c, ae.Code, ae.Message))
+		} else {
+			c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, err.Error()))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, LogoutResponse{
+		UserID: UserID{ID: userID},
+	})
 }
 
 // LogoutAll      godoc
 // @Summary      Выход со всех устройств
-// @Description  Инвалидирует все refresh token текущего пользователя.
+// @Description  Инвалидирует все refresh token текущего пользователя и увеличивает версию сессии.
 // @Tags         auth
-// @Accept       json
 // @Produce      json
 // @Security     BearerAuth
 // @Success      200 {object} LogoutResponse
 // @Failure      401 {object} dto.ErrorResponse "Не авторизован"
 // @Router       /auth/logout-all [post]
 func (h *AuthHandlers) LogoutAll(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, dto.NewErrorResponse(c, appErr.ErrCodeNotImplemented, "not implemented"))
+	val, ok := c.Get(dto.CtxUserID)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, dto.NewErrorResponse(c, appErr.ErrCodeUnauthenticated, "идентификатор пользователя не найден в контексте"))
+		return
+	}
+
+	userID, ok := val.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, "некорректный тип идентификатора пользователя"))
+		return
+	}
+
+	if err := h.service.LogoutAll(c, userID); err != nil {
+		if ae, ok := appErr.AsAppError(err); ok {
+			c.JSON(ae.Status, dto.NewErrorResponse(c, ae.Code, ae.Message))
+		} else {
+			c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, err.Error()))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, LogoutResponse{
+		UserID: UserID{ID: userID},
+	})
 }

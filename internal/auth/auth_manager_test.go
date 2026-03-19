@@ -2,6 +2,9 @@ package auth
 
 import (
 	"backend/internal/dto"
+	logInf "backend/internal/logger/interfaces"
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -9,9 +12,68 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func newTestManager() *Manager {
-	return NewAuthManager("test-secret-key-32bytes!!", 15*time.Minute, 30*24*time.Hour)
+// ── Моки ────────────────────────────────────────────────────────────────────
+
+// mockLogger реализует interfaces.Logger для тестов (no-op).
+type mockLogger struct{}
+
+func (m *mockLogger) Debug(string, ...any)            {}
+func (m *mockLogger) Info(string, ...any)              {}
+func (m *mockLogger) Warn(string, ...any)              {}
+func (m *mockLogger) Error(string, ...any)             {}
+func (m *mockLogger) With(...any) logInf.Logger        { return m }
+func (m *mockLogger) WithGroup(string) logInf.Logger   { return m }
+
+// mockSessionsRepo реализует SessionsRepository для тестов.
+type mockSessionsRepo struct {
+	version    int
+	getErr     error
+	setCalled  bool
+	setVersion int
 }
+
+func (m *mockSessionsRepo) GetSessionVersion(_ context.Context, _ uuid.UUID) (int, error) {
+	return m.version, m.getErr
+}
+
+func (m *mockSessionsRepo) SetSessionVersion(_ context.Context, _ uuid.UUID, version int, _ time.Duration) error {
+	m.setCalled = true
+	m.setVersion = version
+	return nil
+}
+
+// mockUserRepo реализует UserRepository для тестов.
+type mockUserRepo struct {
+	version int
+	err     error
+}
+
+func (m *mockUserRepo) GetVersionToken(_ context.Context, _ uuid.UUID) (int, error) {
+	return m.version, m.err
+}
+
+// ── Хелперы ─────────────────────────────────────────────────────────────────
+
+func newTestManager() *Manager {
+	return NewAuthManager(
+		&mockLogger{},
+		"test-secret-key-32bytes!!",
+		15*time.Minute,
+		30*24*time.Hour,
+		&mockSessionsRepo{version: 1},
+		&mockUserRepo{version: 1},
+	)
+}
+
+func hashForTest(value string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(value), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// ── GenerateAccessToken ─────────────────────────────────────────────────────
 
 func TestGenerateAccessToken_Success(t *testing.T) {
 	m := newTestManager()
@@ -39,6 +101,8 @@ func TestGenerateAccessToken_NilSchoolID(t *testing.T) {
 		t.Fatal("GenerateAccessToken() returned empty token")
 	}
 }
+
+// ── ParseAccessToken ────────────────────────────────────────────────────────
 
 func TestParseAccessToken_Roundtrip(t *testing.T) {
 	m := newTestManager()
@@ -70,8 +134,12 @@ func TestParseAccessToken_Roundtrip(t *testing.T) {
 }
 
 func TestParseAccessToken_WrongSecret(t *testing.T) {
-	m1 := NewAuthManager("secret-one-32-bytes-long!!!", 15*time.Minute, 30*24*time.Hour)
-	m2 := NewAuthManager("secret-two-32-bytes-long!!!", 15*time.Minute, 30*24*time.Hour)
+	log := &mockLogger{}
+	sessions := &mockSessionsRepo{version: 1}
+	users := &mockUserRepo{version: 1}
+
+	m1 := NewAuthManager(log, "secret-one-32-bytes-long!!!", 15*time.Minute, 30*24*time.Hour, sessions, users)
+	m2 := NewAuthManager(log, "secret-two-32-bytes-long!!!", 15*time.Minute, 30*24*time.Hour, sessions, users)
 
 	token, _ := m1.GenerateAccessToken(uuid.New(), nil, 1, dto.RoleStudent)
 
@@ -91,7 +159,14 @@ func TestParseAccessToken_InvalidToken(t *testing.T) {
 }
 
 func TestParseAccessToken_Expired(t *testing.T) {
-	m := NewAuthManager("test-secret-key-32bytes!!", 1*time.Millisecond, 30*24*time.Hour)
+	m := NewAuthManager(
+		&mockLogger{},
+		"test-secret-key-32bytes!!",
+		1*time.Millisecond,
+		30*24*time.Hour,
+		&mockSessionsRepo{version: 1},
+		&mockUserRepo{version: 1},
+	)
 	token, _ := m.GenerateAccessToken(uuid.New(), nil, 1, dto.RoleStudent)
 
 	time.Sleep(10 * time.Millisecond)
@@ -101,6 +176,8 @@ func TestParseAccessToken_Expired(t *testing.T) {
 		t.Fatal("ParseAccessToken() expected error for expired token, got nil")
 	}
 }
+
+// ── GenerateRefreshToken ────────────────────────────────────────────────────
 
 func TestGenerateRefreshToken(t *testing.T) {
 	m := newTestManager()
@@ -119,12 +196,13 @@ func TestGenerateRefreshToken(t *testing.T) {
 	}
 }
 
+// ── CheckRefreshToken ───────────────────────────────────────────────────────
+
 func TestCheckRefreshToken(t *testing.T) {
 	m := newTestManager()
 
 	token, _ := m.GenerateRefreshToken()
 
-	// Для CheckRefreshToken нужен bcrypt хэш
 	hash, err := hashForTest(token)
 	if err != nil {
 		t.Fatalf("hashForTest() error: %v", err)
@@ -138,10 +216,138 @@ func TestCheckRefreshToken(t *testing.T) {
 	}
 }
 
-func hashForTest(value string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(value), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
+// ── TTL getters ─────────────────────────────────────────────────────────────
+
+func TestAccessTTL(t *testing.T) {
+	m := newTestManager()
+	if m.AccessTTL() != 15*time.Minute {
+		t.Fatalf("AccessTTL() = %v, want %v", m.AccessTTL(), 15*time.Minute)
 	}
-	return string(hash), nil
+}
+
+func TestRefreshTTL(t *testing.T) {
+	m := newTestManager()
+	if m.RefreshTTL() != 30*24*time.Hour {
+		t.Fatalf("RefreshTTL() = %v, want %v", m.RefreshTTL(), 30*24*time.Hour)
+	}
+}
+
+// ── CheckToken ──────────────────────────────────────────────────────────────
+
+func TestCheckToken_ValidFromCache(t *testing.T) {
+	m := NewAuthManager(
+		&mockLogger{},
+		"test-secret-key-32bytes!!",
+		15*time.Minute,
+		30*24*time.Hour,
+		&mockSessionsRepo{version: 1},
+		&mockUserRepo{version: 1},
+	)
+
+	token, _ := m.GenerateAccessToken(uuid.New(), nil, 1, dto.RoleStudent)
+
+	userID, _, _, role, err := m.CheckToken(token)
+	if err != nil {
+		t.Fatalf("CheckToken() error: %v", err)
+	}
+	if userID == nil {
+		t.Fatal("CheckToken() returned nil userID, want non-nil")
+	}
+	if *role != dto.RoleStudent {
+		t.Fatalf("CheckToken() role = %v, want %v", *role, dto.RoleStudent)
+	}
+}
+
+func TestCheckToken_ValidFromDB_WarmCache(t *testing.T) {
+	sessionsRepo := &mockSessionsRepo{version: -1, getErr: errors.New("cache miss")}
+	m := NewAuthManager(
+		&mockLogger{},
+		"test-secret-key-32bytes!!",
+		15*time.Minute,
+		30*24*time.Hour,
+		sessionsRepo,
+		&mockUserRepo{version: 1},
+	)
+
+	token, _ := m.GenerateAccessToken(uuid.New(), nil, 1, dto.RoleStudent)
+
+	userID, _, _, _, err := m.CheckToken(token)
+	if err != nil {
+		t.Fatalf("CheckToken() error: %v", err)
+	}
+	if userID == nil {
+		t.Fatal("CheckToken() returned nil userID (fallback to DB should succeed)")
+	}
+
+	// Проверяем что кэш был прогрет
+	if !sessionsRepo.setCalled {
+		t.Fatal("CheckToken() did not warm Redis cache on DB fallback")
+	}
+	if sessionsRepo.setVersion != 1 {
+		t.Fatalf("CheckToken() cached version = %d, want 1", sessionsRepo.setVersion)
+	}
+}
+
+func TestCheckToken_VersionOutdated(t *testing.T) {
+	m := NewAuthManager(
+		&mockLogger{},
+		"test-secret-key-32bytes!!",
+		15*time.Minute,
+		30*24*time.Hour,
+		&mockSessionsRepo{version: 5},
+		&mockUserRepo{version: 5},
+	)
+
+	// Токен с version=1, а в кэше/БД version=5 — токен невалиден
+	token, _ := m.GenerateAccessToken(uuid.New(), nil, 1, dto.RoleStudent)
+
+	userID, _, _, _, _ := m.CheckToken(token)
+	if userID != nil {
+		t.Fatal("CheckToken() returned non-nil userID for outdated session version")
+	}
+}
+
+func TestCheckToken_InvalidJWT(t *testing.T) {
+	m := newTestManager()
+
+	userID, _, _, _, err := m.CheckToken("invalid.jwt.token")
+	if userID != nil {
+		t.Fatal("CheckToken() returned non-nil userID for invalid JWT")
+	}
+	if err == nil {
+		t.Fatal("CheckToken() expected error for invalid JWT")
+	}
+}
+
+func TestCheckToken_ReturnsTokenData(t *testing.T) {
+	uid := uuid.New()
+	schoolID := uuid.New()
+
+	m := NewAuthManager(
+		&mockLogger{},
+		"test-secret-key-32bytes!!",
+		15*time.Minute,
+		30*24*time.Hour,
+		&mockSessionsRepo{version: 2},
+		&mockUserRepo{version: 2},
+	)
+
+	token, _ := m.GenerateAccessToken(uid, &schoolID, 3, dto.RoleSchoolAdmin)
+
+	userID, retSchoolID, sessionVersion, role, err := m.CheckToken(token)
+	if err != nil {
+		t.Fatalf("CheckToken() error: %v", err)
+	}
+	if *userID != uid {
+		t.Fatalf("userID = %v, want %v", *userID, uid)
+	}
+	if *retSchoolID != schoolID {
+		t.Fatalf("schoolID = %v, want %v", *retSchoolID, schoolID)
+	}
+	if sessionVersion != 3 {
+		t.Fatalf("sessionVersion = %d, want 3", sessionVersion)
+	}
+	if *role != dto.RoleSchoolAdmin {
+		t.Fatalf("role = %v, want %v", *role, dto.RoleSchoolAdmin)
+	}
 }

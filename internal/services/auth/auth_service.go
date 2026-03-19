@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
 )
@@ -43,70 +44,39 @@ func (s *AuthService) Login(ctx context.Context, email, password, userAgent, ip 
 	user, err := s.userRep.GetUserByEmail(ctx, email)
 
 	if errors.Is(err, appErr.ErrUserNotFound) {
-		s.log.Info("user not found", "email", email)
+		s.log.Info("пользователь не найден", "email", email)
 		return nil, nil, appErr.NewAppError(http.StatusNotFound, appErr.ErrCodeNotFound, "пользователь не найден")
 	}
 
 	if err != nil {
-		s.log.Error("get user by email failed", "err", err)
+		s.log.Error("ошибка поиска пользователя по email", "err", err)
 		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
 	}
 
 	if !user.IsActive {
-		s.log.Info("user is inactive", "email", email)
+		s.log.Info("пользователь деактивирован", "email", email)
 		return nil, nil, appErr.NewAppError(http.StatusForbidden, appErr.ErrCodeForbidden, "пользователь деактивирован")
 	}
 
 	if user.PasswordHash == nil || !utils.CheckValuesHash(password, *user.PasswordHash) {
-		s.log.Info("invalid credentials", "email", email)
+		s.log.Info("неверные учётные данные", "email", email)
 		return nil, nil, appErr.NewAppError(http.StatusUnauthorized, appErr.ErrInvalidCredentials, "неверный email или пароль")
 	}
 
-	jwtToken, err := s.authManager.GenerateAccessToken(
-		user.ID,
-		user.SchoolID,
-		user.SessionVersion,
-		user.Role,
-	)
+	tokens, err := s.issueTokens(ctx, user.ID, user.SchoolID, user.SessionVersion, user.Role, userAgent, ip)
 	if err != nil {
-		s.log.Error("generate access token failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
+		return nil, nil, err
 	}
 
-	refreshToken, exp := s.authManager.GenerateRefreshToken()
-
-	refreshTokenHash, err := utils.HashValue(refreshToken)
-	if err != nil {
-		s.log.Error("hash refresh token failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
-	}
-
-	deviceInfo := fmt.Sprintf("%s %s", userAgent, ip)
-
-	err = s.tokenRep.SetTokenByUser(ctx, user.ID, refreshTokenHash, deviceInfo, exp)
-	if err != nil {
-		s.log.Error("save refresh token failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка сохранения сессии")
-	}
-
-	if err := s.sessionCache.SetSessionVersion(ctx, user.ID, user.SessionVersion, s.authManager.AccessTTL()); err != nil {
-		s.log.Warn("cache session version failed", "err", err, "user_id", user.ID)
-	}
-	if err := s.sessionCache.SetRefreshTokenHash(ctx, user.ID, refreshTokenHash, s.authManager.RefreshTTL()); err != nil {
-		s.log.Warn("cache refresh token failed", "err", err, "user_id", user.ID)
-	}
-
-	return user, &dto.TokenPair{
-		AccessToken:  jwtToken,
-		RefreshToken: refreshToken,
-	}, nil
+	return user, tokens, nil
 }
 
+// Registration создаёт нового пользователя с ролью student и возвращает пару токенов.
 func (s *AuthService) Registration(ctx context.Context, user *dto.User, password string, userAgent, ip string) (*dto.User, *dto.TokenPair, error) {
 	passwordHash, err := utils.HashValue(password)
 	if err != nil {
-		s.log.Error("hash password failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибки при хэшировании пароля")
+		s.log.Error("ошибка хэширования пароля", "err", err)
+		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка при хэшировании пароля")
 	}
 
 	now := time.Now()
@@ -114,66 +84,233 @@ func (s *AuthService) Registration(ctx context.Context, user *dto.User, password
 	user = &dto.User{
 		ID:             utils.GetUniqUUID(),
 		Role:           dto.RoleStudent,
-		ClassID:        nil,
-		SchoolID:       nil,
 		Email:          user.Email,
 		PasswordHash:   &passwordHash,
 		LastName:       user.LastName,
 		FirstName:      user.FirstName,
 		MiddleName:     user.MiddleName,
-		AvatarKey:      nil,
 		SessionVersion: 1,
 		IsActive:       true,
 		CreatedAt:      &now,
 		UpdatedAt:      &now,
-		DeletedAt:      nil,
 	}
 
-	userDb, err := s.userRep.CreateUser(ctx, user)
+	userDB, err := s.userRep.CreateUser(ctx, user)
 
 	if errors.Is(err, appErr.ErrEmailAlreadyExists) {
-		s.log.Info("email already exists", "email", user.Email)
+		s.log.Info("email уже зарегистрирован", "email", user.Email)
 		return nil, nil, appErr.NewAppError(http.StatusConflict, appErr.ErrEmailAlreadyExists, "email уже зарегистрирован")
 	}
 
 	if err != nil {
-		s.log.Error("create user failed", "err", err)
+		s.log.Error("ошибка создания пользователя", "err", err)
 		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка при создании пользователя")
 	}
 
-	jwtToken, err := s.authManager.GenerateAccessToken(
-		user.ID,
-		user.SchoolID,
-		user.SessionVersion,
-		user.Role,
-	)
+	tokens, err := s.issueTokens(ctx, user.ID, user.SchoolID, user.SessionVersion, user.Role, userAgent, ip)
 	if err != nil {
-		s.log.Error("generate access token failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
+		return nil, nil, err
+	}
+
+	return userDB, tokens, nil
+}
+
+// issueTokens генерирует пару токенов, сохраняет refresh в БД и прогревает кэш Redis.
+func (s *AuthService) issueTokens(ctx context.Context, userID uuid.UUID, schoolID *uuid.UUID, sessionVersion int, role dto.UserRole, userAgent, ip string) (*dto.TokenPair, error) {
+	accessToken, err := s.authManager.GenerateAccessToken(userID, schoolID, sessionVersion, role)
+	if err != nil {
+		s.log.Error("ошибка генерации access-токена", "err", err)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
 	}
 
 	refreshToken, exp := s.authManager.GenerateRefreshToken()
 
 	refreshTokenHash, err := utils.HashValue(refreshToken)
 	if err != nil {
-		s.log.Error("hash refresh token failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
+		s.log.Error("ошибка хэширования refresh-токена", "err", err)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
 	}
 
 	deviceInfo := fmt.Sprintf("%s %s", userAgent, ip)
 
-	err = s.tokenRep.SetTokenByUser(ctx, user.ID, refreshTokenHash, deviceInfo, exp)
+	if err := s.tokenRep.SetTokenByUser(ctx, userID, refreshTokenHash, deviceInfo, exp); err != nil {
+		s.log.Error("ошибка сохранения refresh-токена", "err", err)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка сохранения сессии")
+	}
+
+	if err := s.sessionCache.SetSessionVersion(ctx, userID, sessionVersion, s.authManager.AccessTTL()); err != nil {
+		s.log.Warn("ошибка кэширования версии сессии", "err", err, "user_id", userID)
+	}
+	if err := s.sessionCache.SetRefreshTokenHash(ctx, userID, refreshTokenHash, s.authManager.RefreshTTL()); err != nil {
+		s.log.Warn("ошибка кэширования refresh-токена", "err", err, "user_id", userID)
+	}
+
+	return &dto.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+// GetMe возвращает данные пользователя по ID.
+func (s *AuthService) GetMe(ctx context.Context, id uuid.UUID) (*dto.User, error) {
+	user, err := s.userRep.GetUserByID(ctx, id)
+
+	if errors.Is(err, appErr.ErrUserNotFound) {
+		s.log.Info("пользователь не найден", "user_id", id)
+		return nil, appErr.NewAppError(http.StatusNotFound, appErr.ErrCodeNotFound, "пользователь не найден")
+	}
+
 	if err != nil {
-		s.log.Error("save refresh token failed", "err", err)
-		return nil, nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка сохранения сессии")
+		s.log.Error("ошибка поиска пользователя по id", "user_id", id)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
 	}
 
-	if err := s.sessionCache.SetSessionVersion(ctx, user.ID, user.SessionVersion, s.authManager.AccessTTL()); err != nil {
-		s.log.Warn("cache session version failed", "err", err, "user_id", user.ID)
-	}
-	if err := s.sessionCache.SetRefreshTokenHash(ctx, user.ID, refreshTokenHash, s.authManager.RefreshTTL()); err != nil {
-		s.log.Warn("cache refresh token failed", "err", err, "user_id", user.ID)
+	if !user.IsActive {
+		s.log.Info("пользователь деактивирован", "user_id", id)
+		return nil, appErr.NewAppError(http.StatusForbidden, appErr.ErrCodeForbidden, "пользователь деактивирован")
 	}
 
-	return userDb, &dto.TokenPair{AccessToken: jwtToken, RefreshToken: refreshToken}, nil
+	return user, nil
+}
+
+// Refresh обновляет пару токенов по refresh token.
+func (s *AuthService) Refresh(ctx context.Context, userID uuid.UUID, refreshToken, userAgent, ip string) (*dto.TokenPair, error) {
+	user, err := s.userRep.GetUserByID(ctx, userID)
+	if errors.Is(err, appErr.ErrUserNotFound) {
+		s.log.Info("пользователь не найден при обновлении токена", "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "пользователь не найден")
+	}
+	if err != nil {
+		s.log.Error("ошибка поиска пользователя", "err", err, "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
+	}
+
+	if !user.IsActive {
+		s.log.Info("пользователь деактивирован", "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusForbidden, appErr.ErrCodeForbidden, "пользователь деактивирован")
+	}
+
+	hashes, err := s.tokenRep.GetActiveTokenHashesByUser(ctx, userID)
+	if err != nil {
+		s.log.Error("ошибка получения активных токенов", "err", err, "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
+	}
+
+	var matchedHash string
+	for _, h := range hashes {
+		if s.authManager.CheckRefreshToken(refreshToken, h) {
+			matchedHash = h
+			break
+		}
+	}
+
+	if matchedHash == "" {
+		s.log.Info("refresh-токен не найден или невалиден", "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "невалидный refresh token")
+	}
+
+	if err := s.tokenRep.RevokeToken(ctx, matchedHash); err != nil {
+		s.log.Error("ошибка отзыва refresh-токена", "err", err, "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка отзыва токена")
+	}
+
+	tokens, err := s.issueTokens(ctx, user.ID, user.SchoolID, user.SessionVersion, user.Role, userAgent, ip)
+	if err != nil {
+		return nil, err
+	}
+
+	return tokens, nil
+}
+
+// Logout отзывает один refresh token текущего пользователя.
+func (s *AuthService) Logout(ctx context.Context, userID uuid.UUID, refreshToken string) error {
+	hashes, err := s.tokenRep.GetActiveTokenHashesByUser(ctx, userID)
+	if err != nil {
+		s.log.Error("ошибка получения активных токенов", "err", err, "user_id", userID)
+		return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
+	}
+
+	for _, h := range hashes {
+		if s.authManager.CheckRefreshToken(refreshToken, h) {
+			if err := s.tokenRep.RevokeToken(ctx, h); err != nil {
+				s.log.Error("ошибка отзыва refresh-токена", "err", err, "user_id", userID)
+				return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка отзыва токена")
+			}
+			s.log.Info("refresh-токен отозван", "user_id", userID)
+			return nil
+		}
+	}
+
+	s.log.Info("refresh-токен не найден", "user_id", userID)
+	return appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "невалидный refresh token")
+}
+
+// LogoutAll отзывает все refresh token и инкрементит версию сессии (инвалидирует все access token).
+func (s *AuthService) LogoutAll(ctx context.Context, userID uuid.UUID) error {
+	if err := s.tokenRep.RevokeAllByUser(ctx, userID); err != nil {
+		s.log.Error("ошибка отзыва всех refresh-токенов", "err", err, "user_id", userID)
+		return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка отзыва токенов")
+	}
+
+	newVersion, err := s.userRep.IncrementSessionVersion(ctx, userID)
+	if err != nil {
+		s.log.Error("ошибка инкремента версии сессии", "err", err, "user_id", userID)
+		return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка обновления сессии")
+	}
+
+	if err := s.sessionCache.SetSessionVersion(ctx, userID, newVersion, s.authManager.AccessTTL()); err != nil {
+		s.log.Warn("ошибка обновления кэша версии сессии", "err", err, "user_id", userID)
+	}
+
+	if err := s.sessionCache.DelSession(ctx, userID); err != nil {
+		s.log.Warn("ошибка очистки кэша сессии", "err", err, "user_id", userID)
+	}
+
+	s.log.Info("все сессии пользователя отозваны", "user_id", userID, "new_version", newVersion)
+	return nil
+}
+
+// RegistrationByAdmin создаёт пользователя с указанной ролью и генерирует временный пароль.
+func (s *AuthService) RegistrationByAdmin(ctx context.Context, user *dto.User) (*dto.User, string, error) {
+	password, err := utils.GeneratePassword(16)
+	if err != nil {
+		s.log.Error("ошибка генерации пароля", "err", err)
+		return nil, "", appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации пароля")
+	}
+
+	passwordHash, err := utils.HashValue(password)
+	if err != nil {
+		s.log.Error("ошибка хэширования пароля", "err", err)
+		return nil, "", appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка хэширования пароля")
+	}
+
+	now := time.Now()
+
+	user = &dto.User{
+		ID:             utils.GetUniqUUID(),
+		Role:           user.Role,
+		Email:          user.Email,
+		PasswordHash:   &passwordHash,
+		LastName:       user.LastName,
+		FirstName:      user.FirstName,
+		MiddleName:     user.MiddleName,
+		ClassID:        user.ClassID,
+		SchoolID:       user.SchoolID,
+		SessionVersion: 1,
+		IsActive:       true,
+		CreatedAt:      &now,
+		UpdatedAt:      &now,
+	}
+
+	userDB, err := s.userRep.CreateUser(ctx, user)
+	if errors.Is(err, appErr.ErrEmailAlreadyExists) {
+		s.log.Info("email уже зарегистрирован", "email", user.Email)
+		return nil, "", appErr.NewAppError(http.StatusConflict, appErr.ErrEmailAlreadyExists, "email уже зарегистрирован")
+	}
+	if err != nil {
+		s.log.Error("ошибка создания пользователя", "err", err)
+		return nil, "", appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка создания пользователя")
+	}
+
+	return userDB, password, nil
 }

@@ -14,6 +14,7 @@ import (
 
 type SessionsRepository interface {
 	GetSessionVersion(ctx context.Context, userID uuid.UUID) (int, error)
+	SetSessionVersion(ctx context.Context, userID uuid.UUID, version int, ttl time.Duration) error
 }
 
 type UserRepository interface {
@@ -69,7 +70,7 @@ func (m *Manager) GenerateAccessToken(userID uuid.UUID, schoolID *uuid.UUID, ses
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(m.accessSecret))
 	if err != nil {
-		m.log.Error("Error generating access token", "err", err.Error())
+		m.log.Error("ошибка генерации access-токена", "err", err.Error())
 		return "", fmt.Errorf("%w: %s", appErr.ErrJWTInvalid, err.Error())
 	}
 
@@ -85,23 +86,23 @@ func (m *Manager) ParseAccessToken(tokenString string) (*AccessToken, error) {
 		return []byte(m.accessSecret), nil
 	})
 	if err != nil {
-		m.log.Error("Error parsing access token", "err", err.Error())
+		m.log.Error("ошибка парсинга access-токена", "err", err.Error())
 		return nil, err
 	}
 
 	claims, ok := token.Claims.(*AccessToken)
 	if !ok || !token.Valid {
-		m.log.Info("Error parsing access token", "status", ok)
+		m.log.Info("невалидный access-токен", "status", ok)
 		return nil, fmt.Errorf("%w: %v", appErr.ErrJWTInvalid, err)
 	}
 
 	return claims, nil
 }
 
-func (m *Manager) CheckToken(tokenString string) (bool, error) {
+func (m *Manager) CheckToken(tokenString string) (*uuid.UUID, *uuid.UUID, int, *dto.UserRole, error) {
 	token, err := m.ParseAccessToken(tokenString)
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", appErr.ErrJWTInvalid, err.Error())
+		return nil, nil, 0, nil, fmt.Errorf("%w: %s", appErr.ErrJWTInvalid, err.Error())
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -109,27 +110,32 @@ func (m *Manager) CheckToken(tokenString string) (bool, error) {
 
 	version, err := m.sessions.GetSessionVersion(ctx, token.UserID)
 	if err == nil && token.SessionVersion >= version {
-		m.log.Info("Successful access token", "user", token.UserID, "version", version, "version_token", token.SessionVersion)
-		return true, nil
+		m.log.Info("access-токен валиден", "user", token.UserID, "version", version, "version_token", token.SessionVersion)
+		return &token.UserID, &token.SchoolID, token.SessionVersion, &token.Role, nil
 	}
 
 	if err != nil {
-		m.log.Error("Error getting session version", "err", err.Error(), "user", token.UserID)
+		m.log.Error("ошибка получения версии сессии", "err", err.Error(), "user", token.UserID)
 	}
 
 	version, err = m.user.GetVersionToken(ctx, token.UserID)
 	if err == nil && token.SessionVersion >= version {
-		m.log.Info("Successful access token", "user", token.UserID, "version", token.SessionVersion)
-		return true, nil
+		m.log.Info("access-токен валиден", "user", token.UserID, "version", token.SessionVersion)
+
+		if cacheErr := m.sessions.SetSessionVersion(ctx, token.UserID, version, m.accessTTL); cacheErr != nil {
+			m.log.Warn("ошибка прогрева кэша сессии", "err", cacheErr, "user_id", token.UserID)
+		}
+
+		return &token.UserID, &token.SchoolID, token.SessionVersion, &token.Role, nil
 	}
 
 	if err != nil {
-		m.log.Error("Error getting session version", "err", err.Error(), "user", token.UserID, "version", version, "version_token", token.SessionVersion)
-		return false, nil
+		m.log.Error("ошибка получения версии сессии", "err", err.Error(), "user", token.UserID, "version", version, "version_token", token.SessionVersion)
+		return nil, nil, 0, nil, nil
 	}
 
-	m.log.Info("Version last", "user", token.UserID, "version", version, "version_token", token.SessionVersion)
-	return false, nil
+	m.log.Info("версия сессии устарела", "user", token.UserID, "version", version, "version_token", token.SessionVersion)
+	return nil, nil, 0, nil, nil
 }
 
 // GenerateRefreshToken генерирует UUID refresh-токен и время его истечения.

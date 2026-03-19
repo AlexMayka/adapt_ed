@@ -135,8 +135,12 @@ definitions:
       refresh_token:
         example: b7d0e8d1-47d8-4d3e-8c2b-7b1d0e8a1234
         type: string
+      user_id:
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
     required:
     - refresh_token
+    - user_id
     type: object
   auth.RefreshResponse:
     properties:
@@ -411,9 +415,8 @@ paths:
       - auth
   /auth/logout-all:
     post:
-      consumes:
-      - application/json
-      description: Инвалидирует все refresh token текущего пользователя.
+      description: Инвалидирует все refresh token текущего пользователя и увеличивает
+        версию сессии.
       produces:
       - application/json
       responses:
@@ -453,9 +456,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Принимает refresh token и возвращает новую пару access + refresh.
+      description: Принимает refresh token и user_id, возвращает новую пару access
+        + refresh.
       parameters:
-      - description: Refresh token
+      - description: Refresh token и ID пользователя
         in: body
         name: body
         required: true
@@ -514,6 +518,7 @@ paths:
       consumes:
       - application/json
       description: Создаёт пользователя с указанной ролью и генерирует временный пароль.
+        Для school_admin school_id подставляется автоматически из токена.
       parameters:
       - description: Данные нового пользователя
         in: body
@@ -540,6 +545,8 @@ paths:
           description: Email уже зарегистрирован
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Создание пользователя админом
       tags:
       - auth
@@ -589,6 +596,12 @@ paths:
       summary: Проверка готовности сервиса
       tags:
       - infra
+securityDefinitions:
+  BearerAuth:
+    description: 'Введите токен в формате: Bearer {access_token}'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
 tags:
 - description: 'Служебные эндпоинты приложения: доступность, готовность и метрики
