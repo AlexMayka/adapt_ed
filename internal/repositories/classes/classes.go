@@ -117,26 +117,41 @@ func (r *ClassRepository) List(ctx context.Context, filter dto.ClassFilter) ([]*
 	return classList, total, rows.Err()
 }
 
-// Create создаёт новый класс.
+// Create создаёт новый класс. Если academic_year не указан, БД использует DEFAULT.
 func (r *ClassRepository) Create(ctx context.Context, class *dto.Class) (*dto.Class, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
-	query := `
-		INSERT INTO classes (id, school_id, number_of_class, suffixes_of_class,
-		                     academic_year_start, academic_year_finish, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	columns := []string{"id", "school_id", "number_of_class", "suffixes_of_class", "created_at", "updated_at"}
+	args := []interface{}{class.ID, class.SchoolID, class.NumberOfClass, class.SuffixesOfClass, class.CreatedAt, class.UpdatedAt}
+	argIdx := len(args) + 1
+
+	if class.AcademicYearStart != nil {
+		columns = append(columns, "academic_year_start")
+		args = append(args, class.AcademicYearStart)
+		argIdx++
+	}
+	if class.AcademicYearEnd != nil {
+		columns = append(columns, "academic_year_finish")
+		args = append(args, class.AcademicYearEnd)
+		argIdx++
+	}
+
+	placeholders := make([]string, len(args))
+	for i := range args {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+
+	query := fmt.Sprintf(`
+		INSERT INTO classes (%s)
+		VALUES (%s)
 		RETURNING id, school_id, number_of_class, suffixes_of_class,
 		          academic_year_start, academic_year_finish,
 		          created_at, updated_at, deleted_at
-	`
+	`, joinComma(columns), joinComma(placeholders))
 
 	var c dto.Class
-	err := r.pool.QueryRow(ctx, query,
-		class.ID, class.SchoolID, class.NumberOfClass, class.SuffixesOfClass,
-		class.AcademicYearStart, class.AcademicYearEnd,
-		class.CreatedAt, class.UpdatedAt,
-	).Scan(
+	err := r.pool.QueryRow(ctx, query, args...).Scan(
 		&c.ID, &c.SchoolID, &c.NumberOfClass, &c.SuffixesOfClass,
 		&c.AcademicYearStart, &c.AcademicYearEnd,
 		&c.CreatedAt, &c.UpdatedAt, &c.DeletedAt,
@@ -245,6 +260,14 @@ func joinAnd(parts []string) string {
 	result := parts[0]
 	for _, p := range parts[1:] {
 		result += " AND " + p
+	}
+	return result
+}
+
+func joinComma(parts []string) string {
+	result := parts[0]
+	for _, p := range parts[1:] {
+		result += ", " + p
 	}
 	return result
 }
