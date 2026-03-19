@@ -81,6 +81,13 @@ var (
 	ErrClassAlreadyExists = errors.New("CLASS_ALREADY_EXISTS")
 )
 
+// ── Interest errors ────────────────────────────────────────────────────────
+
+var (
+	ErrInterestNotFound      = errors.New("INTEREST_NOT_FOUND")
+	ErrInterestAlreadyExists = errors.New("INTEREST_ALREADY_EXISTS")
+)
+
 // ── App lifecycle errors ────────────────────────────────────────────────────
 
 var (

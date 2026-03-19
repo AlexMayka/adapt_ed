@@ -517,6 +517,87 @@ definitions:
         example: ready
         type: string
     type: object
+  interest.CreateRequest:
+    properties:
+      name:
+        description: Название интереса
+        example: Футбол
+        type: string
+    required:
+    - name
+    type: object
+  interest.InterestID:
+    properties:
+      id:
+        description: UUID интереса
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        type: string
+    type: object
+  interest.InterestResponse:
+    properties:
+      created_at:
+        description: Дата создания
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      icon_key:
+        description: Ключ иконки в S3
+        example: interests/football.png
+        type: string
+      id:
+        description: UUID интереса
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        type: string
+      is_verified:
+        description: Верифицирован ли интерес
+        example: true
+        type: boolean
+      name:
+        description: Название интереса
+        example: Футбол
+        type: string
+    type: object
+  interest.ListResponse:
+    properties:
+      interests:
+        description: Список интересов
+        items:
+          $ref: '#/definitions/interest.InterestResponse'
+        type: array
+      total:
+        description: Общее количество
+        example: 15
+        type: integer
+    type: object
+  interest.UpdateRequest:
+    properties:
+      icon_key:
+        description: Ключ иконки
+        example: interests/basketball.png
+        type: string
+      name:
+        description: Название интереса
+        example: Баскетбол
+        type: string
+    type: object
+  interest.VerifyRequest:
+    properties:
+      ids:
+        description: Список UUID интересов для верификации
+        example:
+        - '["a1b2c3d4-e5f6-7890-abcd-ef1234567890"]'
+        items:
+          type: string
+        type: array
+    required:
+    - ids
+    type: object
+  interest.VerifyResponse:
+    properties:
+      verified:
+        description: Количество верифицированных интересов
+        example: 3
+        type: integer
+    type: object
   school.CreateRequest:
     properties:
       city:
@@ -994,6 +1075,158 @@ paths:
       summary: Проверка готовности сервиса
       tags:
       - infra
+  /interests:
+    get:
+      description: Возвращает список интересов с фильтрацией и пагинацией.
+      parameters:
+      - description: Поиск по названию
+        in: query
+        name: name
+        type: string
+      - description: Фильтр по верификации
+        in: query
+        name: is_verified
+        type: boolean
+      - description: Количество записей
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interest.ListResponse'
+      security:
+      - BearerAuth: []
+      summary: Список интересов
+      tags:
+      - interests
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новый верифицированный интерес. Доступно только super_admin.
+      parameters:
+      - description: Данные интереса
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/interest.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/interest.InterestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Интерес уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание интереса
+      tags:
+      - interests
+  /interests/{id}:
+    delete:
+      description: Физически удаляет интерес из справочника. Доступно только super_admin.
+      parameters:
+      - description: UUID интереса
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interest.InterestID'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление интереса
+      tags:
+      - interests
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет название или иконку интереса. Доступно только super_admin.
+      parameters:
+      - description: UUID интереса
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Обновляемые поля
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/interest.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interest.InterestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Интерес с таким названием уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление интереса
+      tags:
+      - interests
+  /interests/verify:
+    post:
+      consumes:
+      - application/json
+      description: Верифицирует интересы по списку ID. Доступно только super_admin.
+      parameters:
+      - description: Список ID для верификации
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/interest.VerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/interest.VerifyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Массовая верификация интересов
+      tags:
+      - interests
   /schools:
     get:
       description: Возвращает список школ с фильтрацией и пагинацией.
@@ -1687,3 +1920,5 @@ tags:
   name: classes
 - description: 'Управление пользователями: профиль, пароль, список, активация, удаление.'
   name: users
+- description: Справочник интересов учеников для адаптивного обучения.
+  name: interests

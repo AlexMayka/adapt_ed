@@ -6,6 +6,7 @@ import (
 	"backend/internal/dto"
 	logInf "backend/internal/logger/interfaces"
 	repoClasses "backend/internal/repositories/classes"
+	repoInterests "backend/internal/repositories/interests"
 	repoSchools "backend/internal/repositories/schools"
 	repoSessions "backend/internal/repositories/sessions"
 	repoTokens "backend/internal/repositories/tokens"
@@ -13,11 +14,13 @@ import (
 	"backend/internal/routers/handlers"
 	"backend/internal/routers/handlers/auth"
 	classH "backend/internal/routers/handlers/class"
+	interestH "backend/internal/routers/handlers/interest"
 	"backend/internal/routers/handlers/school"
 	userH "backend/internal/routers/handlers/user"
 	"backend/internal/routers/middleware"
 	authSvc "backend/internal/services/auth"
 	classSvc "backend/internal/services/class"
+	interestSvc "backend/internal/services/interest"
 	schoolSvc "backend/internal/services/school"
 	userSvc "backend/internal/services/user"
 	stgInf "backend/internal/storage/interfaces"
@@ -168,6 +171,27 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	{
 		userSuperGroup.DELETE("/:id", userHandlers.DeleteUser)
 		userSuperGroup.POST("/:id/restore", userHandlers.RestoreUser)
+	}
+
+	// Сборка зависимостей интересов
+	interestRepo := repoInterests.NewInterestRepository(deps.DB.Pool, deps.DB.QueryTimeout)
+	interestService := interestSvc.NewInterestService(deps.Logger, interestRepo)
+	interestHandlers := interestH.NewInterestHandlers(deps.Logger, interestService)
+
+	interestGroup := r.Group("/interests")
+	interestGroup.Use(middleware.Authorization(authManager))
+	{
+		interestGroup.GET("", interestHandlers.ListInterests)
+	}
+
+	interestAdminGroup := r.Group("/interests")
+	interestAdminGroup.Use(middleware.Authorization(authManager))
+	interestAdminGroup.Use(middleware.RequireRole(dto.RoleSuperAdmin))
+	{
+		interestAdminGroup.POST("", interestHandlers.CreateInterest)
+		interestAdminGroup.PATCH("/:id", interestHandlers.UpdateInterest)
+		interestAdminGroup.DELETE("/:id", interestHandlers.DeleteInterest)
+		interestAdminGroup.POST("/verify", interestHandlers.VerifyInterests)
 	}
 
 	return r

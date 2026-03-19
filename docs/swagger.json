@@ -376,6 +376,247 @@
                 }
             }
         },
+        "/interests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список интересов с фильтрацией и пагинацией.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "interests"
+                ],
+                "summary": "Список интересов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Поиск по названию",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Фильтр по верификации",
+                        "name": "is_verified",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество записей",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interest.ListResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создаёт новый верифицированный интерес. Доступно только super_admin.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "interests"
+                ],
+                "summary": "Создание интереса",
+                "parameters": [
+                    {
+                        "description": "Данные интереса",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/interest.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/interest.InterestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Интерес уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/interests/verify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Верифицирует интересы по списку ID. Доступно только super_admin.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "interests"
+                ],
+                "summary": "Массовая верификация интересов",
+                "parameters": [
+                    {
+                        "description": "Список ID для верификации",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/interest.VerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interest.VerifyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/interests/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Физически удаляет интерес из справочника. Доступно только super_admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "interests"
+                ],
+                "summary": "Удаление интереса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID интереса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interest.InterestID"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет название или иконку интереса. Доступно только super_admin.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "interests"
+                ],
+                "summary": "Обновление интереса",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID интереса",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Обновляемые поля",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/interest.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/interest.InterestResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Интерес с таким названием уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/schools": {
             "get": {
                 "security": [
@@ -2108,6 +2349,119 @@
                 }
             }
         },
+        "interest.CreateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "description": "Название интереса",
+                    "type": "string",
+                    "example": "Футбол"
+                }
+            }
+        },
+        "interest.InterestID": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "UUID интереса",
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                }
+            }
+        },
+        "interest.InterestResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Дата создания",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                },
+                "icon_key": {
+                    "description": "Ключ иконки в S3",
+                    "type": "string",
+                    "example": "interests/football.png"
+                },
+                "id": {
+                    "description": "UUID интереса",
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                },
+                "is_verified": {
+                    "description": "Верифицирован ли интерес",
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "description": "Название интереса",
+                    "type": "string",
+                    "example": "Футбол"
+                }
+            }
+        },
+        "interest.ListResponse": {
+            "type": "object",
+            "properties": {
+                "interests": {
+                    "description": "Список интересов",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/interest.InterestResponse"
+                    }
+                },
+                "total": {
+                    "description": "Общее количество",
+                    "type": "integer",
+                    "example": 15
+                }
+            }
+        },
+        "interest.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "icon_key": {
+                    "description": "Ключ иконки",
+                    "type": "string",
+                    "example": "interests/basketball.png"
+                },
+                "name": {
+                    "description": "Название интереса",
+                    "type": "string",
+                    "example": "Баскетбол"
+                }
+            }
+        },
+        "interest.VerifyRequest": {
+            "type": "object",
+            "required": [
+                "ids"
+            ],
+            "properties": {
+                "ids": {
+                    "description": "Список UUID интересов для верификации",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"]"
+                    ]
+                }
+            }
+        },
+        "interest.VerifyResponse": {
+            "type": "object",
+            "properties": {
+                "verified": {
+                    "description": "Количество верифицированных интересов",
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
         "school.CreateRequest": {
             "type": "object",
             "required": [
@@ -2444,6 +2798,10 @@
         {
             "description": "Управление пользователями: профиль, пароль, список, активация, удаление.",
             "name": "users"
+        },
+        {
+            "description": "Справочник интересов учеников для адаптивного обучения.",
+            "name": "interests"
         }
     ]
 }
