@@ -68,6 +68,12 @@ var (
 	ErrEmailNotUnique = errors.New("EMAIL_NOT_UNIQUE")
 )
 
+// ── School errors ──────────────────────────────────────────────────────────
+
+var (
+	ErrSchoolNotFound = errors.New("SCHOOL_NOT_FOUND")
+)
+
 // ── App lifecycle errors ────────────────────────────────────────────────────
 
 var (

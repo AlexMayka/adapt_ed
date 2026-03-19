@@ -54,8 +54,6 @@ type UserID struct {
 	ID uuid.UUID `json:"id" example:"10cb44c1-18f7-4a3e-b0bd-5d2609619d65" description:"UUID пользователя"`
 }
 
-// ── Составные DTO ───────────────────────────────────────────────────────────
-
 // UserBase содержит общие поля пользователя, используемые в DTO.
 type UserBase struct {
 	AuthEmail

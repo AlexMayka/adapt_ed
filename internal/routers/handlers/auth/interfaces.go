@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type AuthService interface {
+type ServiceAuth interface {
 	// Login выполняет аутентификацию по email/password.
 	Login(ctx context.Context, email, password, userAgent, ip string) (*dto.User, *dto.TokenPair, error)
 

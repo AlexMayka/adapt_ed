@@ -5,13 +5,16 @@ import (
 	"backend/internal/config"
 	"backend/internal/dto"
 	logInf "backend/internal/logger/interfaces"
+	repoSchools "backend/internal/repositories/schools"
 	repoSessions "backend/internal/repositories/sessions"
 	repoTokens "backend/internal/repositories/tokens"
 	repoUsers "backend/internal/repositories/users"
 	"backend/internal/routers/handlers"
 	"backend/internal/routers/handlers/auth"
+	"backend/internal/routers/handlers/school"
 	"backend/internal/routers/middleware"
 	authSvc "backend/internal/services/auth"
+	schoolSvc "backend/internal/services/school"
 	stgInf "backend/internal/storage/interfaces"
 	"backend/internal/storage/postgres"
 	"github.com/gin-gonic/gin"
@@ -83,6 +86,33 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	adminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
 	{
 		adminGroup.POST("/registration/admin", authH.RegistrationByAdmin)
+	}
+
+	// Сборка зависимостей школ
+	schoolRepo := repoSchools.NewSchoolRepository(deps.DB.Pool, deps.DB.QueryTimeout)
+	schoolService := schoolSvc.NewSchoolService(deps.Logger, schoolRepo)
+	schoolH := school.NewSchoolHandlers(deps.Logger, schoolService)
+
+	schoolGroup := r.Group("/schools")
+	schoolGroup.Use(middleware.Authorization(authManager))
+	{
+		schoolGroup.GET("", schoolH.ListSchools)
+		schoolGroup.GET("/:id", schoolH.GetSchool)
+	}
+
+	schoolAdminGroup := r.Group("/schools")
+	schoolAdminGroup.Use(middleware.Authorization(authManager))
+	schoolAdminGroup.Use(middleware.RequireRole(dto.RoleSchoolAdmin, dto.RoleSuperAdmin))
+	{
+		schoolAdminGroup.PATCH("/:id", schoolH.UpdateSchool)
+	}
+
+	schoolSuperGroup := r.Group("/schools")
+	schoolSuperGroup.Use(middleware.Authorization(authManager))
+	schoolSuperGroup.Use(middleware.RequireRole(dto.RoleSuperAdmin))
+	{
+		schoolSuperGroup.POST("", schoolH.CreateSchool)
+		schoolSuperGroup.DELETE("/:id", schoolH.DeleteSchool)
 	}
 
 	return r

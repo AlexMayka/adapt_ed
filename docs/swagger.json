@@ -375,6 +375,252 @@
                     }
                 }
             }
+        },
+        "/schools": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает список школ с фильтрацией и пагинацией.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schools"
+                ],
+                "summary": "Список школ",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Поиск по названию (подстрока)",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Фильтр по городу",
+                        "name": "city",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество записей (по умолчанию 20, макс 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Смещение (по умолчанию 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/school.ListResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Создаёт новую школу. Доступно только super_admin.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schools"
+                ],
+                "summary": "Создание школы",
+                "parameters": [
+                    {
+                        "description": "Данные школы",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/school.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/school.SchoolResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/schools/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Возвращает данные школы по ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schools"
+                ],
+                "summary": "Получение школы",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/school.SchoolResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Школа не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Мягкое удаление школы. Доступно только super_admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schools"
+                ],
+                "summary": "Удаление школы",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/school.SchoolID"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Школа не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Обновляет данные школы. Доступно super_admin и school_admin своей школы.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "schools"
+                ],
+                "summary": "Обновление школы",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID школы",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Обновляемые поля",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/school.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/school.SchoolResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Школа не найдена",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -861,6 +1107,111 @@
                     "example": "ready"
                 }
             }
+        },
+        "school.CreateRequest": {
+            "type": "object",
+            "required": [
+                "city",
+                "name"
+            ],
+            "properties": {
+                "city": {
+                    "description": "Город школы",
+                    "type": "string",
+                    "example": "Воронеж"
+                },
+                "name": {
+                    "description": "Наименование школы",
+                    "type": "string",
+                    "example": "МКОУ 'Никольская СОШ'"
+                }
+            }
+        },
+        "school.ListResponse": {
+            "type": "object",
+            "properties": {
+                "schools": {
+                    "description": "Список школ",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/school.SchoolResponse"
+                    }
+                },
+                "total": {
+                    "description": "Общее количество записей",
+                    "type": "integer",
+                    "example": 42
+                }
+            }
+        },
+        "school.SchoolID": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "UUID школы",
+                    "type": "string",
+                    "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
+                }
+            }
+        },
+        "school.SchoolResponse": {
+            "type": "object",
+            "required": [
+                "city",
+                "name"
+            ],
+            "properties": {
+                "city": {
+                    "description": "Город школы",
+                    "type": "string",
+                    "example": "Воронеж"
+                },
+                "created_at": {
+                    "description": "Дата создания школы",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                },
+                "id": {
+                    "description": "UUID школы",
+                    "type": "string",
+                    "example": "10cb44c1-18f7-4a3e-b0bd-5d2609619d65"
+                },
+                "logo_key": {
+                    "description": "Ключ логотипа в S3-хранилище",
+                    "type": "string",
+                    "example": "logos/10cb44c1/photo.png"
+                },
+                "name": {
+                    "description": "Наименование школы",
+                    "type": "string",
+                    "example": "МКОУ 'Никольская СОШ'"
+                },
+                "updated_at": {
+                    "description": "Дата последнего обновления школы",
+                    "type": "string",
+                    "example": "2026-03-16T10:30:00Z"
+                }
+            }
+        },
+        "school.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "description": "Город школы",
+                    "type": "string",
+                    "example": "Воронеж"
+                },
+                "logo_key": {
+                    "description": "Ключ логотипа в S3-хранилище",
+                    "type": "string",
+                    "example": "logos/10cb44c1/photo.png"
+                },
+                "name": {
+                    "description": "Наименование школы",
+                    "type": "string",
+                    "example": "МКОУ 'Никольская СОШ'"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -877,8 +1228,12 @@
             "name": "infra"
         },
         {
-            "description": "Экндпоинты для работы с авторизацией пользователей",
+            "description": "Эндпоинты для работы с авторизацией пользователей",
             "name": "auth"
+        },
+        {
+            "description": "Управление школами: создание, обновление, удаление и поиск.",
+            "name": "schools"
         }
     ]
 }

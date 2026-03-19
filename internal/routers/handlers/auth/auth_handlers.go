@@ -11,15 +11,15 @@ import (
 	"net/http"
 )
 
-// AuthHandlers содержит HTTP-обработчики авторизации.
-type AuthHandlers struct {
+// HandlersAuth содержит HTTP-обработчики авторизации.
+type HandlersAuth struct {
 	log     logInf.Logger
-	service AuthService
+	service ServiceAuth
 }
 
 // NewAuthHandlers создаёт обработчики авторизации.
-func NewAuthHandlers(log logInf.Logger, service AuthService) *AuthHandlers {
-	return &AuthHandlers{log: log, service: service}
+func NewAuthHandlers(log logInf.Logger, service ServiceAuth) *HandlersAuth {
+	return &HandlersAuth{log: log, service: service}
 }
 
 // Registration   godoc
@@ -33,7 +33,7 @@ func NewAuthHandlers(log logInf.Logger, service AuthService) *AuthHandlers {
 // @Failure      400 {object} dto.ErrorResponse
 // @Failure      409 {object} dto.ErrorResponse "Email уже зарегистрирован"
 // @Router       /auth/registration [post]
-func (h *AuthHandlers) Registration(c *gin.Context) {
+func (h *HandlersAuth) Registration(c *gin.Context) {
 	var req RegistrationRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -103,7 +103,7 @@ func (h *AuthHandlers) Registration(c *gin.Context) {
 // @Failure      403 {object} dto.ErrorResponse "Недостаточно прав"
 // @Failure      409 {object} dto.ErrorResponse "Email уже зарегистрирован"
 // @Router       /auth/registration/admin [post]
-func (h *AuthHandlers) RegistrationByAdmin(c *gin.Context) {
+func (h *HandlersAuth) RegistrationByAdmin(c *gin.Context) {
 	var req RegistrationRequestByAdmin
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -186,7 +186,7 @@ func (h *AuthHandlers) RegistrationByAdmin(c *gin.Context) {
 // @Failure      400 {object} dto.ErrorResponse
 // @Failure      401 {object} dto.ErrorResponse "Неверный email или пароль"
 // @Router       /auth/login [post]
-func (h *AuthHandlers) Login(c *gin.Context) {
+func (h *HandlersAuth) Login(c *gin.Context) {
 	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -240,7 +240,7 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 // @Success      200 {object} GetMeResponse
 // @Failure      401 {object} dto.ErrorResponse "Не авторизован"
 // @Router       /auth/me [get]
-func (h *AuthHandlers) GetMe(c *gin.Context) {
+func (h *HandlersAuth) GetMe(c *gin.Context) {
 	val, ok := c.Get(dto.CtxUserID)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, dto.NewErrorResponse(c, appErr.ErrJWTInvalid, "идентификатор пользователя не найден в контексте"))
@@ -299,7 +299,7 @@ func (h *AuthHandlers) GetMe(c *gin.Context) {
 // @Failure      400 {object} dto.ErrorResponse
 // @Failure      401 {object} dto.ErrorResponse "Невалидный или истёкший refresh token"
 // @Router       /auth/refresh [post]
-func (h *AuthHandlers) Refresh(c *gin.Context) {
+func (h *HandlersAuth) Refresh(c *gin.Context) {
 	var req RefreshRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -336,7 +336,7 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 // @Success      200 {object} LogoutResponse
 // @Failure      401 {object} dto.ErrorResponse "Не авторизован"
 // @Router       /auth/logout [post]
-func (h *AuthHandlers) Logout(c *gin.Context) {
+func (h *HandlersAuth) Logout(c *gin.Context) {
 	val, ok := c.Get(dto.CtxUserID)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, dto.NewErrorResponse(c, appErr.ErrCodeUnauthenticated, "идентификатор пользователя не найден в контексте"))
@@ -378,7 +378,7 @@ func (h *AuthHandlers) Logout(c *gin.Context) {
 // @Success      200 {object} LogoutResponse
 // @Failure      401 {object} dto.ErrorResponse "Не авторизован"
 // @Router       /auth/logout-all [post]
-func (h *AuthHandlers) LogoutAll(c *gin.Context) {
+func (h *HandlersAuth) LogoutAll(c *gin.Context) {
 	val, ok := c.Get(dto.CtxUserID)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, dto.NewErrorResponse(c, appErr.ErrCodeUnauthenticated, "идентификатор пользователя не найден в контексте"))

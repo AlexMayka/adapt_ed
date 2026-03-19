@@ -72,7 +72,9 @@ func setSwagger(appName, host, version, envType, instance string) {
 // @tag.name infra
 // @tag.description Служебные эндпоинты приложения: доступность, готовность и метрики мониторинга.
 // @tag.name auth
-// @tag.description Экндпоинты для работы с авторизацией пользователей
+// @tag.description Эндпоинты для работы с авторизацией пользователей
+// @tag.name schools
+// @tag.description Управление школами: создание, обновление, удаление и поиск.
 func main() {
 	cnf, err := config.Load()
 	if err != nil {

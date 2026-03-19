@@ -349,6 +349,84 @@ definitions:
         example: ready
         type: string
     type: object
+  school.CreateRequest:
+    properties:
+      city:
+        description: Город школы
+        example: Воронеж
+        type: string
+      name:
+        description: Наименование школы
+        example: МКОУ 'Никольская СОШ'
+        type: string
+    required:
+    - city
+    - name
+    type: object
+  school.ListResponse:
+    properties:
+      schools:
+        description: Список школ
+        items:
+          $ref: '#/definitions/school.SchoolResponse'
+        type: array
+      total:
+        description: Общее количество записей
+        example: 42
+        type: integer
+    type: object
+  school.SchoolID:
+    properties:
+      id:
+        description: UUID школы
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+    type: object
+  school.SchoolResponse:
+    properties:
+      city:
+        description: Город школы
+        example: Воронеж
+        type: string
+      created_at:
+        description: Дата создания школы
+        example: "2026-03-16T10:30:00Z"
+        type: string
+      id:
+        description: UUID школы
+        example: 10cb44c1-18f7-4a3e-b0bd-5d2609619d65
+        type: string
+      logo_key:
+        description: Ключ логотипа в S3-хранилище
+        example: logos/10cb44c1/photo.png
+        type: string
+      name:
+        description: Наименование школы
+        example: МКОУ 'Никольская СОШ'
+        type: string
+      updated_at:
+        description: Дата последнего обновления школы
+        example: "2026-03-16T10:30:00Z"
+        type: string
+    required:
+    - city
+    - name
+    type: object
+  school.UpdateRequest:
+    properties:
+      city:
+        description: Город школы
+        example: Воронеж
+        type: string
+      logo_key:
+        description: Ключ логотипа в S3-хранилище
+        example: logos/10cb44c1/photo.png
+        type: string
+      name:
+        description: Наименование школы
+        example: МКОУ 'Никольская СОШ'
+        type: string
+    type: object
 info:
   contact: {}
   description: API description
@@ -596,6 +674,163 @@ paths:
       summary: Проверка готовности сервиса
       tags:
       - infra
+  /schools:
+    get:
+      description: Возвращает список школ с фильтрацией и пагинацией.
+      parameters:
+      - description: Поиск по названию (подстрока)
+        in: query
+        name: name
+        type: string
+      - description: Фильтр по городу
+        in: query
+        name: city
+        type: string
+      - description: Количество записей (по умолчанию 20, макс 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/school.ListResponse'
+      security:
+      - BearerAuth: []
+      summary: Список школ
+      tags:
+      - schools
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую школу. Доступно только super_admin.
+      parameters:
+      - description: Данные школы
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/school.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/school.SchoolResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание школы
+      tags:
+      - schools
+  /schools/{id}:
+    delete:
+      description: Мягкое удаление школы. Доступно только super_admin.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/school.SchoolID'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Школа не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление школы
+      tags:
+      - schools
+    get:
+      description: Возвращает данные школы по ID.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/school.SchoolResponse'
+        "404":
+          description: Школа не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение школы
+      tags:
+      - schools
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет данные школы. Доступно super_admin и school_admin своей
+        школы.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Обновляемые поля
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/school.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/school.SchoolResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Школа не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление школы
+      tags:
+      - schools
 securityDefinitions:
   BearerAuth:
     description: 'Введите токен в формате: Bearer {access_token}'
@@ -607,5 +842,7 @@ tags:
 - description: 'Служебные эндпоинты приложения: доступность, готовность и метрики
     мониторинга.'
   name: infra
-- description: Экндпоинты для работы с авторизацией пользователей
+- description: Эндпоинты для работы с авторизацией пользователей
   name: auth
+- description: 'Управление школами: создание, обновление, удаление и поиск.'
+  name: schools
