@@ -171,6 +171,34 @@ func (r *SchoolRepository) Update(ctx context.Context, school *dto.School) (*dto
 	return &s, nil
 }
 
+// Restore восстанавливает мягко удалённую школу.
+func (r *SchoolRepository) Restore(ctx context.Context, id uuid.UUID) (*dto.School, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+
+	query := `
+		UPDATE schools
+		SET deleted_at = NULL, updated_at = now()
+		WHERE id = $1 AND deleted_at IS NOT NULL
+		RETURNING id, name, city, logo_key, created_at, updated_at, deleted_at
+	`
+
+	var s dto.School
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&s.ID, &s.Name, &s.City, &s.LogoKey,
+		&s.CreatedAt, &s.UpdatedAt, &s.DeletedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, appErr.ErrSchoolNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
 // SoftDelete выполняет мягкое удаление школы.
 func (r *SchoolRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)

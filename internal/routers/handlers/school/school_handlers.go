@@ -239,3 +239,34 @@ func (h *SchoolHandlers) DeleteSchool(c *gin.Context) {
 
 	c.JSON(http.StatusOK, SchoolID{ID: id})
 }
+
+// RestoreSchool godoc
+// @Summary      Восстановление школы
+// @Description  Восстанавливает мягко удалённую школу. Доступно только super_admin.
+// @Tags         schools
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "UUID школы"
+// @Success      200 {object} SchoolResponse
+// @Failure      403 {object} dto.ErrorResponse "Недостаточно прав"
+// @Failure      404 {object} dto.ErrorResponse "Удалённая школа не найдена"
+// @Router       /schools/{id}/restore [post]
+func (h *SchoolHandlers) RestoreSchool(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(c, appErr.ErrCodeBadRequest, "некорректный UUID"))
+		return
+	}
+
+	school, err := h.service.RestoreSchool(c, id)
+	if err != nil {
+		if ae, ok := appErr.AsAppError(err); ok {
+			c.JSON(ae.Status, dto.NewErrorResponse(c, ae.Code, ae.Message))
+		} else {
+			c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(c, appErr.ErrCodeInternalServer, err.Error()))
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, toResponse(school))
+}

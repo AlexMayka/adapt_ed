@@ -112,6 +112,24 @@ func (s *SchoolService) UpdateSchool(ctx context.Context, school *dto.School) (*
 	return updated, nil
 }
 
+// RestoreSchool восстанавливает мягко удалённую школу.
+func (s *SchoolService) RestoreSchool(ctx context.Context, id uuid.UUID) (*dto.School, error) {
+	school, err := s.schoolRep.Restore(ctx, id)
+
+	if errors.Is(err, appErr.ErrSchoolNotFound) {
+		s.log.Info("школа не найдена для восстановления", "school_id", id)
+		return nil, appErr.NewAppError(http.StatusNotFound, appErr.ErrCodeNotFound, "удалённая школа не найдена")
+	}
+
+	if err != nil {
+		s.log.Error("ошибка восстановления школы", "err", err, "school_id", id)
+		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка восстановления школы")
+	}
+
+	s.log.Info("школа восстановлена", "school_id", id)
+	return school, nil
+}
+
 // DeleteSchool выполняет мягкое удаление школы.
 func (s *SchoolService) DeleteSchool(ctx context.Context, id uuid.UUID) error {
 	err := s.schoolRep.SoftDelete(ctx, id)

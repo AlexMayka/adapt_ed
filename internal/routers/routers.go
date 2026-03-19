@@ -113,6 +113,7 @@ func NewRouter(deps Deps, envType string) *gin.Engine {
 	{
 		schoolSuperGroup.POST("", schoolH.CreateSchool)
 		schoolSuperGroup.DELETE("/:id", schoolH.DeleteSchool)
+		schoolSuperGroup.POST("/:id/restore", schoolH.RestoreSchool)
 	}
 
 	return r

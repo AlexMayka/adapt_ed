@@ -19,6 +19,9 @@ type SchoolService interface {
 	// UpdateSchool обновляет данные школы и возвращает обновлённую запись.
 	UpdateSchool(ctx context.Context, school *dto.School) (*dto.School, error)
 
+	// RestoreSchool восстанавливает мягко удалённую школу.
+	RestoreSchool(ctx context.Context, id uuid.UUID) (*dto.School, error)
+
 	// DeleteSchool выполняет мягкое удаление школы.
 	DeleteSchool(ctx context.Context, id uuid.UUID) error
 }

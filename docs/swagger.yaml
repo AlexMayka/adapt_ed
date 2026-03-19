@@ -901,6 +901,35 @@ paths:
       summary: Обновление школы
       tags:
       - schools
+  /schools/{id}/restore:
+    post:
+      description: Восстанавливает мягко удалённую школу. Доступно только super_admin.
+      parameters:
+      - description: UUID школы
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/school.SchoolResponse'
+        "403":
+          description: Недостаточно прав
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Удалённая школа не найдена
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Восстановление школы
+      tags:
+      - schools
 securityDefinitions:
   BearerAuth:
     description: 'Введите токен в формате: Bearer {access_token}'

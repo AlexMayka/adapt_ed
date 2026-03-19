@@ -27,9 +27,11 @@ type mockSchoolRepo struct {
 	schools     []*dto.School
 	total       int
 	err         error
-	createErr   error
-	updateErr   error
-	deleteErr   error
+	restoreSchool *dto.School
+	createErr     error
+	updateErr     error
+	restoreErr    error
+	deleteErr     error
 }
 
 func (m *mockSchoolRepo) GetByID(_ context.Context, _ uuid.UUID) (*dto.School, error) {
@@ -52,6 +54,10 @@ func (m *mockSchoolRepo) Update(_ context.Context, s *dto.School) (*dto.School, 
 		return nil, m.updateErr
 	}
 	return s, nil
+}
+
+func (m *mockSchoolRepo) Restore(_ context.Context, _ uuid.UUID) (*dto.School, error) {
+	return m.restoreSchool, m.restoreErr
 }
 
 func (m *mockSchoolRepo) SoftDelete(_ context.Context, _ uuid.UUID) error {
@@ -309,5 +315,52 @@ func TestDeleteSchool_DBError(t *testing.T) {
 	}
 	if ae.Status != 500 {
 		t.Fatalf("DeleteSchool() status = %d, want 500", ae.Status)
+	}
+}
+
+// ── RestoreSchool ───────────────────────────────────────────────────────────
+
+func TestRestoreSchool_Success(t *testing.T) {
+	s := testSchool()
+	svc := newTestService(&mockSchoolRepo{restoreSchool: s})
+
+	got, err := svc.RestoreSchool(context.Background(), s.ID)
+	if err != nil {
+		t.Fatalf("RestoreSchool() error: %v", err)
+	}
+	if got.ID != s.ID {
+		t.Fatalf("RestoreSchool() id = %v, want %v", got.ID, s.ID)
+	}
+}
+
+func TestRestoreSchool_NotFound(t *testing.T) {
+	svc := newTestService(&mockSchoolRepo{restoreErr: appErr.ErrSchoolNotFound})
+
+	_, err := svc.RestoreSchool(context.Background(), uuid.New())
+	if err == nil {
+		t.Fatal("RestoreSchool() expected error for missing school")
+	}
+	var ae *appErr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("RestoreSchool() error type = %T, want *AppError", err)
+	}
+	if ae.Status != 404 {
+		t.Fatalf("RestoreSchool() status = %d, want 404", ae.Status)
+	}
+}
+
+func TestRestoreSchool_DBError(t *testing.T) {
+	svc := newTestService(&mockSchoolRepo{restoreErr: errors.New("db error")})
+
+	_, err := svc.RestoreSchool(context.Background(), uuid.New())
+	if err == nil {
+		t.Fatal("RestoreSchool() expected error for db failure")
+	}
+	var ae *appErr.AppError
+	if !errors.As(err, &ae) {
+		t.Fatalf("RestoreSchool() error type = %T, want *AppError", err)
+	}
+	if ae.Status != 500 {
+		t.Fatalf("RestoreSchool() status = %d, want 500", ae.Status)
 	}
 }
