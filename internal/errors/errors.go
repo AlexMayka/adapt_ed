@@ -87,6 +87,18 @@ var (
 	ErrProfileNotFound = errors.New("PROFILE_NOT_FOUND")
 )
 
+// ── Curriculum errors ──────────────────────────────────────────────────────
+
+var (
+	ErrSubjectNotFound      = errors.New("SUBJECT_NOT_FOUND")
+	ErrSubjectAlreadyExists = errors.New("SUBJECT_ALREADY_EXISTS")
+	ErrProgramNotFound      = errors.New("PROGRAM_NOT_FOUND")
+	ErrProgramAlreadyExists = errors.New("PROGRAM_ALREADY_EXISTS")
+	ErrChapterNotFound      = errors.New("CHAPTER_NOT_FOUND")
+	ErrTopicNotFound        = errors.New("TOPIC_NOT_FOUND")
+	ErrSubtopicNotFound     = errors.New("SUBTOPIC_NOT_FOUND")
+)
+
 // ── Interest errors ────────────────────────────────────────────────────────
 
 var (

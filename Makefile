@@ -43,6 +43,22 @@ migrate-up:
 	$(LOAD_ENV) \
 	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" up
 
+migrate-down:
+	echo "Откат последней миграции"
+	$(LOAD_ENV) \
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" down
+
+migrate-reset:
+	echo "Сброс всех миграций"
+	$(LOAD_ENV) \
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" reset
+
+migrate-redo:
+	echo "Сброс и повторное применение всех миграций"
+	$(LOAD_ENV) \
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" reset && \
+	goose -dir migrations postgres "host=$${PG_HOST} port=$${PG_PORT} user=$${PG_USER} password=$${PG_PASSWORD} dbname=$${PG_DB} sslmode=$${PG_SSL_MODE}" up
+
 
 APP_COMPOSE=docker compose --env-file $(ENV_FILE)
 

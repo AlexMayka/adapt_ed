@@ -2,7 +2,8 @@
 
 -- ============================================================
 -- Домен 2: Учебная программа
--- Таблицы: subjects, grades, chapters, topics, subtopics
+-- Таблицы: subjects, programs, chapters, topics, subtopics,
+--           school_programs, student_programs
 -- ============================================================
 
 -- ---------- subjects ----------
@@ -17,48 +18,58 @@ CREATE TABLE subjects (
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE  subjects              IS 'Учебный предмет (Информатика, Физика, Математика). Стабильный справочник без версионирования.';
+COMMENT ON TABLE  subjects              IS 'Учебный предмет (Физика, Математика, Информатика). Стабильный справочник без версионирования.';
 COMMENT ON COLUMN subjects.id           IS 'Идентификатор предмета';
-COMMENT ON COLUMN subjects.name         IS 'Название предмета (Информатика)';
-COMMENT ON COLUMN subjects.slug         IS 'Slug предмета (informatics)';
+COMMENT ON COLUMN subjects.name         IS 'Название предмета (Физика)';
+COMMENT ON COLUMN subjects.slug         IS 'Slug предмета (physics)';
 COMMENT ON COLUMN subjects.icon_key     IS 'Путь к иконке предмета в MinIO';
 COMMENT ON COLUMN subjects.color        IS 'Цвет предмета в UI (#HEX)';
 COMMENT ON COLUMN subjects.created_at   IS 'Дата создания записи';
 COMMENT ON COLUMN subjects.updated_at   IS 'Дата обновления записи';
 
--- ---------- grades ----------
+-- ---------- programs ----------
 
-CREATE TABLE grades (
+CREATE TABLE programs (
     id           uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
     subject_id   uuid        NOT NULL,
     grade_number smallint    NOT NULL,
+    slug         text        UNIQUE NOT NULL,
+    title        text        NOT NULL,
+    author       text,
     textbook     text,
+    description  text,
+    is_active    bool        NOT NULL DEFAULT true,
     created_at   timestamptz NOT NULL DEFAULT now(),
     updated_at   timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE grades
-    ADD CONSTRAINT fk_grades_subject
+ALTER TABLE programs
+    ADD CONSTRAINT fk_programs_subject
     FOREIGN KEY (subject_id) REFERENCES subjects (id)
     ON DELETE CASCADE ON UPDATE NO ACTION
     DEFERRABLE INITIALLY IMMEDIATE;
 
-CREATE UNIQUE INDEX uq_grades_subject_number
-    ON grades (subject_id, grade_number);
+CREATE INDEX idx_programs_subject_grade
+    ON programs (subject_id, grade_number);
 
-COMMENT ON TABLE  grades                IS 'Связка предмет + номер класса. Содержит ссылку на учебник. Стабильный справочник без версионирования.';
-COMMENT ON COLUMN grades.id             IS 'Идентификатор класса-предмета';
-COMMENT ON COLUMN grades.subject_id     IS 'Предмет';
-COMMENT ON COLUMN grades.grade_number   IS 'Номер класса (7)';
-COMMENT ON COLUMN grades.textbook       IS 'Учебник (Босова Л.Л., ФГОС)';
-COMMENT ON COLUMN grades.created_at     IS 'Дата создания записи';
-COMMENT ON COLUMN grades.updated_at     IS 'Дата обновления записи';
+COMMENT ON TABLE  programs                IS 'Конкретная учебная программа (курс). Один предмет + класс может иметь несколько программ (разные авторы, учебники, уровни). Школы и индивидуалы покупают/подключают программы.';
+COMMENT ON COLUMN programs.id             IS 'Идентификатор программы';
+COMMENT ON COLUMN programs.subject_id     IS 'Предмет';
+COMMENT ON COLUMN programs.grade_number   IS 'Номер класса (7, 8, 9...)';
+COMMENT ON COLUMN programs.slug           IS 'Уникальный slug программы (physics-7-peryshkin)';
+COMMENT ON COLUMN programs.title          IS 'Название программы (Физика 7 класс, базовый уровень)';
+COMMENT ON COLUMN programs.author         IS 'Автор/авторы (Пёрышкин И.М., Иванов А.И.)';
+COMMENT ON COLUMN programs.textbook       IS 'Учебник (ФГОС 2024)';
+COMMENT ON COLUMN programs.description    IS 'Описание программы';
+COMMENT ON COLUMN programs.is_active      IS 'Активна ли программа (доступна для покупки/подключения)';
+COMMENT ON COLUMN programs.created_at     IS 'Дата создания записи';
+COMMENT ON COLUMN programs.updated_at     IS 'Дата обновления записи';
 
 -- ---------- chapters ----------
 
 CREATE TABLE chapters (
     id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-    grade_id   uuid        NOT NULL,
+    program_id uuid        NOT NULL,
     title      text        NOT NULL,
     sort_order smallint    NOT NULL,
     icon_key   text,
@@ -68,17 +79,17 @@ CREATE TABLE chapters (
 );
 
 ALTER TABLE chapters
-    ADD CONSTRAINT fk_chapters_grade
-    FOREIGN KEY (grade_id) REFERENCES grades (id)
+    ADD CONSTRAINT fk_chapters_program
+    FOREIGN KEY (program_id) REFERENCES programs (id)
     ON DELETE CASCADE ON UPDATE NO ACTION
     DEFERRABLE INITIALLY IMMEDIATE;
 
-CREATE INDEX idx_chapters_grade_sort
-    ON chapters (grade_id, sort_order);
+CREATE INDEX idx_chapters_program_sort
+    ON chapters (program_id, sort_order);
 
 COMMENT ON TABLE  chapters              IS 'Глава учебной программы. Версионируется — при изменении создаётся новая версия.';
 COMMENT ON COLUMN chapters.id           IS 'Идентификатор версии главы';
-COMMENT ON COLUMN chapters.grade_id     IS 'Класс-предмет';
+COMMENT ON COLUMN chapters.program_id   IS 'Программа';
 COMMENT ON COLUMN chapters.title        IS 'Название главы';
 COMMENT ON COLUMN chapters.sort_order   IS 'Порядок главы (1, 2, 3...)';
 COMMENT ON COLUMN chapters.icon_key     IS 'Путь к иконке главы в MinIO';
@@ -153,10 +164,84 @@ COMMENT ON COLUMN subtopics.is_active    IS 'Текущая версия';
 COMMENT ON COLUMN subtopics.version      IS 'Номер версии';
 COMMENT ON COLUMN subtopics.created_at   IS 'Дата создания версии';
 
+-- ---------- school_programs ----------
+
+CREATE TABLE school_programs (
+    id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    school_id  uuid        NOT NULL,
+    program_id uuid        NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE school_programs
+    ADD CONSTRAINT fk_school_programs_school
+    FOREIGN KEY (school_id) REFERENCES schools (id)
+    ON DELETE CASCADE ON UPDATE NO ACTION
+    DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE school_programs
+    ADD CONSTRAINT fk_school_programs_program
+    FOREIGN KEY (program_id) REFERENCES programs (id)
+    ON DELETE CASCADE ON UPDATE NO ACTION
+    DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE UNIQUE INDEX uq_school_programs
+    ON school_programs (school_id, program_id);
+
+CREATE INDEX idx_school_programs_school_id
+    ON school_programs (school_id);
+
+CREATE INDEX idx_school_programs_program_id
+    ON school_programs (program_id);
+
+COMMENT ON TABLE  school_programs              IS 'Связь M:N школа ↔ программа. Школа покупает пакет — все ученики школы получают доступ к программе.';
+COMMENT ON COLUMN school_programs.id           IS 'Идентификатор связи';
+COMMENT ON COLUMN school_programs.school_id    IS 'Школа';
+COMMENT ON COLUMN school_programs.program_id   IS 'Программа';
+COMMENT ON COLUMN school_programs.created_at   IS 'Дата подключения программы';
+
+-- ---------- student_programs ----------
+
+CREATE TABLE student_programs (
+    id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    uuid        NOT NULL,
+    program_id uuid        NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE student_programs
+    ADD CONSTRAINT fk_student_programs_user
+    FOREIGN KEY (user_id) REFERENCES users (id)
+    ON DELETE CASCADE ON UPDATE NO ACTION
+    DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE student_programs
+    ADD CONSTRAINT fk_student_programs_program
+    FOREIGN KEY (program_id) REFERENCES programs (id)
+    ON DELETE CASCADE ON UPDATE NO ACTION
+    DEFERRABLE INITIALLY IMMEDIATE;
+
+CREATE UNIQUE INDEX uq_student_programs
+    ON student_programs (user_id, program_id);
+
+CREATE INDEX idx_student_programs_user_id
+    ON student_programs (user_id);
+
+CREATE INDEX idx_student_programs_program_id
+    ON student_programs (program_id);
+
+COMMENT ON TABLE  student_programs              IS 'Связь M:N ученик-индивидуал ↔ программа. Ученик без школы покупает программы самостоятельно.';
+COMMENT ON COLUMN student_programs.id           IS 'Идентификатор связи';
+COMMENT ON COLUMN student_programs.user_id      IS 'Ученик';
+COMMENT ON COLUMN student_programs.program_id   IS 'Программа';
+COMMENT ON COLUMN student_programs.created_at   IS 'Дата покупки программы';
+
 -- +goose Down
 
-DROP TABLE IF EXISTS subtopics CASCADE;
-DROP TABLE IF EXISTS topics    CASCADE;
-DROP TABLE IF EXISTS chapters  CASCADE;
-DROP TABLE IF EXISTS grades    CASCADE;
-DROP TABLE IF EXISTS subjects  CASCADE;
+DROP TABLE IF EXISTS student_programs CASCADE;
+DROP TABLE IF EXISTS school_programs  CASCADE;
+DROP TABLE IF EXISTS subtopics        CASCADE;
+DROP TABLE IF EXISTS topics           CASCADE;
+DROP TABLE IF EXISTS chapters         CASCADE;
+DROP TABLE IF EXISTS programs         CASCADE;
+DROP TABLE IF EXISTS subjects         CASCADE;

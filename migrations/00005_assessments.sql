@@ -78,7 +78,7 @@ CREATE TABLE assessments (
     title          text              NOT NULL,
     topic_id       uuid,
     chapter_id     uuid,
-    grade_id       uuid,
+    program_id     uuid,
     class_id       uuid,
     assigned_by    uuid,
     due_at         timestamptz,
@@ -100,8 +100,8 @@ ALTER TABLE assessments
     DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE assessments
-    ADD CONSTRAINT fk_assessments_grade
-    FOREIGN KEY (grade_id) REFERENCES grades (id)
+    ADD CONSTRAINT fk_assessments_program
+    FOREIGN KEY (program_id) REFERENCES programs (id)
     ON DELETE SET NULL ON UPDATE NO ACTION
     DEFERRABLE INITIALLY IMMEDIATE;
 
@@ -129,6 +129,9 @@ CREATE INDEX idx_assessments_topic_id
 CREATE INDEX idx_assessments_chapter_id
     ON assessments (chapter_id);
 
+CREATE INDEX idx_assessments_program_id
+    ON assessments (program_id);
+
 COMMENT ON TABLE  assessments                IS 'Проверка знаний: мини-проверка (после подтемы), ДЗ (по параграфу/главе), КТ (после главы, адаптивный), итоговый экзамен (весь курс, адаптивный). Может быть назначена учителем или сгенерирована автоматически.';
 COMMENT ON COLUMN assessments.id             IS 'Идентификатор проверки';
 COMMENT ON COLUMN assessments.type           IS 'Тип проверки';
@@ -136,7 +139,7 @@ COMMENT ON COLUMN assessments.status         IS 'Статус проверки';
 COMMENT ON COLUMN assessments.title          IS 'Название проверки';
 COMMENT ON COLUMN assessments.topic_id       IS 'Параграф (для mini_check, ДЗ по параграфу)';
 COMMENT ON COLUMN assessments.chapter_id     IS 'Глава (для КТ, ДЗ по главе)';
-COMMENT ON COLUMN assessments.grade_id       IS 'Класс-предмет (для итогового экзамена)';
+COMMENT ON COLUMN assessments.program_id     IS 'Программа (для итогового экзамена)';
 COMMENT ON COLUMN assessments.class_id       IS 'Класс (кому назначено)';
 COMMENT ON COLUMN assessments.assigned_by    IS 'Учитель (NULL = автогенерация)';
 COMMENT ON COLUMN assessments.due_at         IS 'Дедлайн (для ДЗ)';
