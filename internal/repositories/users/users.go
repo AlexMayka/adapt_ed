@@ -36,7 +36,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*dto
 		       last_name, first_name, middle_name, avatar_key,
 		       session_version, is_active, created_at, updated_at, deleted_at
 		FROM users
-		WHERE email = $1
+		WHERE email = $1 AND deleted_at IS NULL
 	`
 
 	var user dto.User
@@ -151,7 +151,7 @@ func (r *UserRepository) GetVersionToken(ctx context.Context, user uuid.UUID) (i
 	query := `
 		SELECT session_version
 		FROM users
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	var sessionVersion int
@@ -176,7 +176,7 @@ func (r *UserRepository) IncrementSessionVersion(ctx context.Context, userID uui
 	query := `
 		UPDATE users
 		SET session_version = session_version + 1
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 		RETURNING session_version
 	`
 
@@ -201,7 +201,7 @@ func (r *UserRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*dto.Us
 		       last_name, first_name, middle_name, avatar_key,
 		       session_version, is_active, created_at, updated_at, deleted_at
 		FROM users
-		WHERE id = $1
+		WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	var user dto.User
