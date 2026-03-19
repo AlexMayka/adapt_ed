@@ -64,32 +64,31 @@ func (m *mockUserRepository) IncrementSessionVersion(_ context.Context, _ uuid.U
 
 type mockTokenRepository struct {
 	setErr          error
+	hasActive       bool
+	hasActiveErr    error
+	revokeResult    bool
 	revokeErr       error
 	revokeAllErr    error
-	activeHashes    []string
-	activeHashesErr error
 	revokeCalled    bool
 	revokeAllCalled bool
-	revokedHash     string
 }
 
 func (m *mockTokenRepository) SetTokenByUser(_ context.Context, _ uuid.UUID, _ string, _ string, _ time.Time) error {
 	return m.setErr
 }
 
-func (m *mockTokenRepository) RevokeToken(_ context.Context, tokenHash string) error {
+func (m *mockTokenRepository) HasActiveToken(_ context.Context, _ uuid.UUID, _ string) (bool, error) {
+	return m.hasActive, m.hasActiveErr
+}
+
+func (m *mockTokenRepository) RevokeTokenByUser(_ context.Context, _ uuid.UUID, _ string) (bool, error) {
 	m.revokeCalled = true
-	m.revokedHash = tokenHash
-	return m.revokeErr
+	return m.revokeResult, m.revokeErr
 }
 
 func (m *mockTokenRepository) RevokeAllByUser(_ context.Context, _ uuid.UUID) error {
 	m.revokeAllCalled = true
 	return m.revokeAllErr
-}
-
-func (m *mockTokenRepository) GetActiveTokenHashesByUser(_ context.Context, _ uuid.UUID) ([]string, error) {
-	return m.activeHashes, m.activeHashesErr
 }
 
 // ── mockAuthManager ─────────────────────────────────────────────────────────
@@ -99,7 +98,6 @@ type mockAuthManager struct {
 	accessTokenErr error
 	refreshToken   string
 	refreshExp     time.Time
-	checkResult    bool
 	accessTTL      time.Duration
 	refreshTTL     time.Duration
 }
@@ -114,10 +112,6 @@ func (m *mockAuthManager) ParseAccessToken(_ string) (*authPkg.AccessToken, erro
 
 func (m *mockAuthManager) GenerateRefreshToken() (string, time.Time) {
 	return m.refreshToken, m.refreshExp
-}
-
-func (m *mockAuthManager) CheckRefreshToken(tokenString string, hashToken string) bool {
-	return m.checkResult
 }
 
 func (m *mockAuthManager) AccessTTL() time.Duration  { return m.accessTTL }
@@ -176,7 +170,6 @@ func defaultAuthManager() *mockAuthManager {
 		accessToken:  "access-token",
 		refreshToken: "refresh-token",
 		refreshExp:   time.Now().Add(30 * 24 * time.Hour),
-		checkResult:  true,
 		accessTTL:    15 * time.Minute,
 		refreshTTL:   30 * 24 * time.Hour,
 	}
@@ -424,20 +417,15 @@ func TestGetMe_InactiveUser(t *testing.T) {
 
 func TestRefresh_Success(t *testing.T) {
 	user := testUser()
-	refreshToken := "raw-refresh-token"
-	tokenHash := hashPassword(refreshToken)
-
-	mgr := defaultAuthManager()
-	mgr.checkResult = true
 
 	svc := newTestService(
 		&mockUserRepository{user: user},
-		&mockTokenRepository{activeHashes: []string{tokenHash}},
-		mgr,
+		&mockTokenRepository{revokeResult: true},
+		defaultAuthManager(),
 		&mockSessionCache{},
 	)
 
-	tokens, err := svc.Refresh(context.Background(), user.ID, refreshToken, "Mozilla", "127.0.0.1")
+	tokens, err := svc.Refresh(context.Background(), user.ID, "raw-refresh-token", "Mozilla", "127.0.0.1")
 	if err != nil {
 		t.Fatalf("Refresh() error: %v", err)
 	}
@@ -449,13 +437,10 @@ func TestRefresh_Success(t *testing.T) {
 func TestRefresh_InvalidToken(t *testing.T) {
 	user := testUser()
 
-	mgr := defaultAuthManager()
-	mgr.checkResult = false
-
 	svc := newTestService(
 		&mockUserRepository{user: user},
-		&mockTokenRepository{activeHashes: []string{"some-hash"}},
-		mgr,
+		&mockTokenRepository{revokeResult: false},
+		defaultAuthManager(),
 		&mockSessionCache{},
 	)
 
@@ -520,21 +505,16 @@ func TestRefresh_InactiveUser(t *testing.T) {
 // ── Logout ──────────────────────────────────────────────────────────────────
 
 func TestLogout_Success(t *testing.T) {
-	refreshToken := "raw-refresh-token"
-	tokenHash := hashPassword(refreshToken)
-	tokenRep := &mockTokenRepository{activeHashes: []string{tokenHash}}
-
-	mgr := defaultAuthManager()
-	mgr.checkResult = true
+	tokenRep := &mockTokenRepository{revokeResult: true}
 
 	svc := newTestService(
 		&mockUserRepository{},
 		tokenRep,
-		mgr,
+		defaultAuthManager(),
 		&mockSessionCache{},
 	)
 
-	err := svc.Logout(context.Background(), uuid.New(), refreshToken)
+	err := svc.Logout(context.Background(), uuid.New(), "raw-refresh-token")
 	if err != nil {
 		t.Fatalf("Logout() error: %v", err)
 	}
@@ -544,13 +524,10 @@ func TestLogout_Success(t *testing.T) {
 }
 
 func TestLogout_InvalidToken(t *testing.T) {
-	mgr := defaultAuthManager()
-	mgr.checkResult = false
-
 	svc := newTestService(
 		&mockUserRepository{},
-		&mockTokenRepository{activeHashes: []string{"some-hash"}},
-		mgr,
+		&mockTokenRepository{revokeResult: false},
+		defaultAuthManager(),
 		&mockSessionCache{},
 	)
 

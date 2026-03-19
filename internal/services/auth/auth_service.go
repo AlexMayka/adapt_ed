@@ -125,11 +125,7 @@ func (s *AuthService) issueTokens(ctx context.Context, userID uuid.UUID, schoolI
 
 	refreshToken, exp := s.authManager.GenerateRefreshToken()
 
-	refreshTokenHash, err := utils.HashValue(refreshToken)
-	if err != nil {
-		s.log.Error("ошибка хэширования refresh-токена", "err", err)
-		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка генерации токена")
-	}
+	refreshTokenHash := utils.HashSHA256(refreshToken)
 
 	deviceInfo := fmt.Sprintf("%s %s", userAgent, ip)
 
@@ -190,28 +186,17 @@ func (s *AuthService) Refresh(ctx context.Context, userID uuid.UUID, refreshToke
 		return nil, appErr.NewAppError(http.StatusForbidden, appErr.ErrCodeForbidden, "пользователь деактивирован")
 	}
 
-	hashes, err := s.tokenRep.GetActiveTokenHashesByUser(ctx, userID)
+	tokenHash := utils.HashSHA256(refreshToken)
+
+	revoked, err := s.tokenRep.RevokeTokenByUser(ctx, userID, tokenHash)
 	if err != nil {
-		s.log.Error("ошибка получения активных токенов", "err", err, "user_id", userID)
-		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
-	}
-
-	var matchedHash string
-	for _, h := range hashes {
-		if s.authManager.CheckRefreshToken(refreshToken, h) {
-			matchedHash = h
-			break
-		}
-	}
-
-	if matchedHash == "" {
-		s.log.Info("refresh-токен не найден или невалиден", "user_id", userID)
-		return nil, appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "невалидный refresh token")
-	}
-
-	if err := s.tokenRep.RevokeToken(ctx, matchedHash); err != nil {
 		s.log.Error("ошибка отзыва refresh-токена", "err", err, "user_id", userID)
 		return nil, appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка отзыва токена")
+	}
+
+	if !revoked {
+		s.log.Info("refresh-токен не найден или невалиден", "user_id", userID)
+		return nil, appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "невалидный refresh token")
 	}
 
 	tokens, err := s.issueTokens(ctx, user.ID, user.SchoolID, user.SessionVersion, user.Role, userAgent, ip)
@@ -224,25 +209,21 @@ func (s *AuthService) Refresh(ctx context.Context, userID uuid.UUID, refreshToke
 
 // Logout отзывает один refresh token текущего пользователя.
 func (s *AuthService) Logout(ctx context.Context, userID uuid.UUID, refreshToken string) error {
-	hashes, err := s.tokenRep.GetActiveTokenHashesByUser(ctx, userID)
+	tokenHash := utils.HashSHA256(refreshToken)
+
+	revoked, err := s.tokenRep.RevokeTokenByUser(ctx, userID, tokenHash)
 	if err != nil {
-		s.log.Error("ошибка получения активных токенов", "err", err, "user_id", userID)
-		return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "внутренняя ошибка сервера")
+		s.log.Error("ошибка отзыва refresh-токена", "err", err, "user_id", userID)
+		return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка отзыва токена")
 	}
 
-	for _, h := range hashes {
-		if s.authManager.CheckRefreshToken(refreshToken, h) {
-			if err := s.tokenRep.RevokeToken(ctx, h); err != nil {
-				s.log.Error("ошибка отзыва refresh-токена", "err", err, "user_id", userID)
-				return appErr.NewAppError(http.StatusInternalServerError, appErr.ErrCodeInternalServer, "ошибка отзыва токена")
-			}
-			s.log.Info("refresh-токен отозван", "user_id", userID)
-			return nil
-		}
+	if !revoked {
+		s.log.Info("refresh-токен не найден", "user_id", userID)
+		return appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "невалидный refresh token")
 	}
 
-	s.log.Info("refresh-токен не найден", "user_id", userID)
-	return appErr.NewAppError(http.StatusUnauthorized, appErr.ErrCodeUnauthenticated, "невалидный refresh token")
+	s.log.Info("refresh-токен отозван", "user_id", userID)
+	return nil
 }
 
 // LogoutAll отзывает все refresh token и инкрементит версию сессии (инвалидирует все access token).

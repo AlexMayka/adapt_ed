@@ -2,6 +2,8 @@ package utils
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"math/big"
 
 	"golang.org/x/crypto/bcrypt"
@@ -35,4 +37,10 @@ func HashValue(value string) (string, error) {
 func CheckValuesHash(value string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(value))
 	return err == nil
+}
+
+// HashSHA256 возвращает детерминированный SHA-256 хэш значения.
+func HashSHA256(value string) string {
+	h := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(h[:])
 }

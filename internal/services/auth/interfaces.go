@@ -18,16 +18,15 @@ type UserRepository interface {
 
 type TokenRepository interface {
 	SetTokenByUser(ctx context.Context, userID uuid.UUID, tokenHash, deviceInfo string, expires time.Time) error
-	RevokeToken(ctx context.Context, tokenHash string) error
+	HasActiveToken(ctx context.Context, userID uuid.UUID, tokenHash string) (bool, error)
+	RevokeTokenByUser(ctx context.Context, userID uuid.UUID, tokenHash string) (bool, error)
 	RevokeAllByUser(ctx context.Context, userID uuid.UUID) error
-	GetActiveTokenHashesByUser(ctx context.Context, userID uuid.UUID) ([]string, error)
 }
 
 type AuthManager interface {
 	GenerateAccessToken(userID uuid.UUID, schoolID *uuid.UUID, sessionVersion int, role dto.UserRole) (string, error)
 	ParseAccessToken(tokenString string) (*auth.AccessToken, error)
 	GenerateRefreshToken() (string, time.Time)
-	CheckRefreshToken(tokenString string, hashToken string) bool
 	AccessTTL() time.Duration
 	RefreshTTL() time.Duration
 }

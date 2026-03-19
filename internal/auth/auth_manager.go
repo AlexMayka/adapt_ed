@@ -143,11 +143,6 @@ func (m *Manager) GenerateRefreshToken() (string, time.Time) {
 	return utils.GetUniqUUID().String(), time.Now().Add(m.refreshTTL)
 }
 
-// CheckRefreshToken сравнивает refresh-токен с его bcrypt-хэшем.
-func (m *Manager) CheckRefreshToken(tokenString string, hashToken string) bool {
-	return utils.CheckValuesHash(tokenString, hashToken)
-}
-
 // AccessTTL возвращает время жизни access-токена.
 func (m *Manager) AccessTTL() time.Duration {
 	return m.accessTTL

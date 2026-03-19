@@ -32,21 +32,6 @@ func (r *TokenRepository) SetTokenByUser(ctx context.Context, userID uuid.UUID, 
 	return err
 }
 
-// RevokeToken отзывает конкретный refresh token по хешу.
-func (r *TokenRepository) RevokeToken(ctx context.Context, tokenHash string) error {
-	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
-	defer cancel()
-
-	query := `
-		UPDATE refresh_tokens
-		SET revoked_at = now()
-		WHERE token_hash = $1 AND revoked_at IS NULL
-	`
-
-	_, err := r.pool.Exec(ctx, query, tokenHash)
-	return err
-}
-
 // RevokeAllByUser отзывает все активные refresh token пользователя.
 func (r *TokenRepository) RevokeAllByUser(ctx context.Context, userID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
@@ -62,8 +47,8 @@ func (r *TokenRepository) RevokeAllByUser(ctx context.Context, userID uuid.UUID)
 	return err
 }
 
-// GetActiveTokenHash проверяет наличие активного (не отозванного, не истёкшего) токена.
-func (r *TokenRepository) GetActiveTokenHash(ctx context.Context, userID uuid.UUID, tokenHash string) (bool, error) {
+// HasActiveToken проверяет наличие активного refresh-токена по user_id и хэшу.
+func (r *TokenRepository) HasActiveToken(ctx context.Context, userID uuid.UUID, tokenHash string) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
@@ -82,32 +67,22 @@ func (r *TokenRepository) GetActiveTokenHash(ctx context.Context, userID uuid.UU
 	return exists, err
 }
 
-// GetActiveTokenHashesByUser возвращает все активные хэши refresh-токенов пользователя.
-func (r *TokenRepository) GetActiveTokenHashesByUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
+// RevokeTokenByUser отзывает refresh-токен по user_id и хэшу.
+func (r *TokenRepository) RevokeTokenByUser(ctx context.Context, userID uuid.UUID, tokenHash string) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
 
 	query := `
-		SELECT token_hash FROM refresh_tokens
+		UPDATE refresh_tokens
+		SET revoked_at = now()
 		WHERE user_id = $1
+		  AND token_hash = $2
 		  AND revoked_at IS NULL
-		  AND expires_at > now()
 	`
 
-	rows, err := r.pool.Query(ctx, query, userID)
+	tag, err := r.pool.Exec(ctx, query, userID, tokenHash)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	defer rows.Close()
-
-	var hashes []string
-	for rows.Next() {
-		var h string
-		if err := rows.Scan(&h); err != nil {
-			return nil, err
-		}
-		hashes = append(hashes, h)
-	}
-
-	return hashes, rows.Err()
+	return tag.RowsAffected() > 0, nil
 }

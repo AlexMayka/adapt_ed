@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // ── Моки ────────────────────────────────────────────────────────────────────
@@ -63,14 +62,6 @@ func newTestManager() *Manager {
 		&mockSessionsRepo{version: 1},
 		&mockUserRepo{version: 1},
 	)
-}
-
-func hashForTest(value string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(value), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hash), nil
 }
 
 // ── GenerateAccessToken ─────────────────────────────────────────────────────
@@ -193,26 +184,6 @@ func TestGenerateRefreshToken(t *testing.T) {
 	}
 	if exp1.Before(time.Now()) {
 		t.Fatal("GenerateRefreshToken() returned expiration in the past")
-	}
-}
-
-// ── CheckRefreshToken ───────────────────────────────────────────────────────
-
-func TestCheckRefreshToken(t *testing.T) {
-	m := newTestManager()
-
-	token, _ := m.GenerateRefreshToken()
-
-	hash, err := hashForTest(token)
-	if err != nil {
-		t.Fatalf("hashForTest() error: %v", err)
-	}
-
-	if !m.CheckRefreshToken(token, hash) {
-		t.Fatal("CheckRefreshToken() returned false for valid token")
-	}
-	if m.CheckRefreshToken("wrong-token", hash) {
-		t.Fatal("CheckRefreshToken() returned true for wrong token")
 	}
 }
 
